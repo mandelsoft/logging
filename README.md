@@ -94,3 +94,56 @@ using an `Or`, `And`, or `Not` condition.
 Because `Rule` and `Condition` are interfaces, any desired behaviour
 can be provided by dedicated rule and/or condition implementations.
 
+## Configuration
+
+It is possible to configue a log context from a textual configuration
+using `config.Configure(ctx, bytedata)`:
+
+```yaml
+defaultLevel: Info
+rules:
+  - rule:
+      level: Debug
+      conditions:
+        - realm: github.com/mandelsoft/spiff
+  - rule:
+      level: Trace
+      conditions:
+        - attribute:
+            name: test
+            value:
+               value: testvalue  # value is the *value* type, here
+```
+
+Rules might provide a deserialization by registering a type object
+with `config.RegisterRuleType(name, typ)`. The factory type must implement the
+interface `scheme.RuleType` and provide a value object
+deserializable by yaml.
+
+In a similar way it is possible to register deserializations for
+`Condition`s. The standard condition rule supports a condition deserialization
+based on those registrations.
+
+The standard names for rules are:
+ - `rule`: condition rule
+
+The standard names for conditions are:
+- `and`: AND expression for a list of sub sequent conditions
+- `or`: OR expression for a list of sub sequent conditions
+- `not`: negate given expression
+- `realm`: name for a realm condition
+- `realmprefix`: name for a realm prefix condition
+- `attribute`: attribute condition given by a map with `name` and `value`.
+  
+The config package also offers a value deserialization using
+`config.RegisterValueType`. The default value type is `value`. 
+It supports an `interface{}` deserialization.
+
+For all deserialization types flat names are reserved for
+the global usage by this library. Own types should use a reverse
+DNS name to avoid conflicts by different users of this logging
+API.
+
+To provide own deserialization context, an own object of type
+`config.Registry` can be created using `config.NewRegistry`.
+The standard registry can be obtained by `config.DefaultRegistry()`

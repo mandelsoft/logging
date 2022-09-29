@@ -40,7 +40,24 @@ var _ = Describe("context test", func() {
 		ctx = logging.New(def)
 	})
 
+	It("just default logs", func() {
+		ctx.Logger().Trace("trace")
+		ctx.Logger().Debug("debug")
+		ctx.Logger().Info("info")
+		ctx.Logger().Warn("warn")
+		ctx.Logger().Error("error")
+
+		fmt.Printf("%s\n", buf.String())
+
+		Expect("\n" + buf.String()).To(Equal(`
+V[3] info
+V[2] warn
+V[1] error
+`))
+	})
+
 	It("just logs", func() {
+		ctx.SetDefaultLevel(9)
 		ctx.Logger().Trace("trace")
 		ctx.Logger().Debug("debug")
 		ctx.Logger().Info("info")

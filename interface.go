@@ -18,7 +18,13 @@
 
 package logging
 
-import "github.com/go-logr/logr"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/go-logr/logr"
+)
 
 // These are the different logging levels. You can set the logging level to log
 // on your instance of logger.
@@ -38,6 +44,44 @@ const (
 	// TraceLevel level. Designates finer-grained informational events than the Debug.
 	TraceLevel
 )
+
+func ParseLevel(s string) (int, error) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "error":
+		return ErrorLevel, nil
+	case "warn":
+		return WarnLevel, nil
+	case "info":
+		return InfoLevel, nil
+	case "debug":
+		return DebugLevel, nil
+	case "trace":
+		return TraceLevel, nil
+	default:
+		v, err := strconv.ParseInt(s, 10, 32)
+		if err != nil || v < 0 {
+			return 0, fmt.Errorf("invalid log level %q", s)
+		}
+		return int(v), nil
+	}
+}
+
+func LevelName(l int) string {
+	switch l {
+	case ErrorLevel:
+		return "Error"
+	case WarnLevel:
+		return "Warn"
+	case InfoLevel:
+		return "Info"
+	case DebugLevel:
+		return "Debug"
+	case TraceLevel:
+		return "Trace"
+	default:
+		return fmt.Sprintf("%d", l)
+	}
+}
 
 type Logger interface {
 	Error(msg string, keypairs ...interface{})
@@ -63,6 +107,7 @@ type Rule interface {
 }
 
 type Context interface {
+	SetDefaultLevel(level int)
 	SetBaseLogger(logger logr.Logger)
 
 	AddRule(...Rule)

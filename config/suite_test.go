@@ -16,40 +16,16 @@
  *  limitations under the License.
  */
 
-package logging
+package config_test
 
 import (
-	"github.com/go-logr/logr"
+	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-type ConditionRule struct {
-	conditions []Condition
-	level      int
-}
-
-var _ Rule = (*ConditionRule)(nil)
-
-func NewConditionRule(level int, cond ...Condition) Rule {
-	return &ConditionRule{
-		level:      level,
-		conditions: cond,
-	}
-}
-
-func (r *ConditionRule) Match(l logr.Logger, messageContext ...MessageContext) Logger {
-	for _, c := range r.conditions {
-		if !c.Match(messageContext...) {
-			return nil
-		}
-	}
-
-	return NewLogger(l.WithSink(WrapSink(r.level, l.GetSink())))
-}
-
-func (r *ConditionRule) Level() int {
-	return r.level
-}
-
-func (r *ConditionRule) Conditions() []Condition {
-	return append(r.conditions[:0:0], r.conditions...)
+func TestConfig(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Deserialization Test Suite")
 }

@@ -16,40 +16,24 @@
  *  limitations under the License.
  */
 
-package logging
+package config
 
 import (
-	"github.com/go-logr/logr"
+	"encoding/json"
+
+	"github.com/mandelsoft/logging"
+	"sigs.k8s.io/yaml"
 )
 
-type ConditionRule struct {
-	conditions []Condition
-	level      int
+type Config struct {
+	DefaultLevel string `json:"defaultLevel"`
+	Rules        []json.RawMessage
 }
 
-var _ Rule = (*ConditionRule)(nil)
-
-func NewConditionRule(level int, cond ...Condition) Rule {
-	return &ConditionRule{
-		level:      level,
-		conditions: cond,
-	}
+func (c *Config) UnmarshalFrom(data []byte) error {
+	return yaml.Unmarshal(data, c)
 }
 
-func (r *ConditionRule) Match(l logr.Logger, messageContext ...MessageContext) Logger {
-	for _, c := range r.conditions {
-		if !c.Match(messageContext...) {
-			return nil
-		}
-	}
-
-	return NewLogger(l.WithSink(WrapSink(r.level, l.GetSink())))
-}
-
-func (r *ConditionRule) Level() int {
-	return r.level
-}
-
-func (r *ConditionRule) Conditions() []Condition {
-	return append(r.conditions[:0:0], r.conditions...)
+func Configure(ctx logging.Context, data []byte) error {
+	return _registry.Configure(ctx, data)
 }

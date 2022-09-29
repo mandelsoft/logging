@@ -43,9 +43,11 @@ func Default() Context {
 }
 
 func New(base logr.Logger) Context {
-	return &context{
+	ctx := &context{
 		baseLogger: base,
 	}
+	ctx.setDefaultLevel(InfoLevel)
+	return ctx
 }
 
 func (c *context) SetDefaultLevel(level int) {
@@ -100,5 +102,5 @@ func (c *context) Logger(messageContext ...MessageContext) Logger {
 			return l
 		}
 	}
-	return &logger{c.baseLogger}
+	return c.defaultLogger
 }

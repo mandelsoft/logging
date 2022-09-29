@@ -20,14 +20,14 @@ package logging
 
 // And provides an AND condition for the given conditions.
 func And(conditions ...Condition) Condition {
-	return &and{conditions}
+	return &AndExpr{conditions}
 }
 
-type and struct {
+type AndExpr struct {
 	conditions []Condition
 }
 
-func (e *and) Match(messageContext ...MessageContext) bool {
+func (e *AndExpr) Match(messageContext ...MessageContext) bool {
 	for _, c := range e.conditions {
 		if !c.Match(messageContext...) {
 			return false
@@ -36,16 +36,20 @@ func (e *and) Match(messageContext ...MessageContext) bool {
 	return true
 }
 
-// Or provides an OR condition for the given conditions.
-func Or(conditions ...Condition) Condition {
-	return &or{conditions}
+func (e *AndExpr) Conditions() []Condition {
+	return append(e.conditions[:0:0], e.conditions...)
 }
 
-type or struct {
+// Or provides an OR condition for the given conditions.
+func Or(conditions ...Condition) Condition {
+	return &OrExpr{conditions}
+}
+
+type OrExpr struct {
 	conditions []Condition
 }
 
-func (e *or) Match(messageContext ...MessageContext) bool {
+func (e *OrExpr) Match(messageContext ...MessageContext) bool {
 	for _, c := range e.conditions {
 		if c.Match(messageContext...) {
 			return true
@@ -54,15 +58,23 @@ func (e *or) Match(messageContext ...MessageContext) bool {
 	return false
 }
 
-// Not provides a NOT condition for the given condition.
-func Not(condition Condition) Condition {
-	return &not{condition}
+func (e *OrExpr) Conditions() []Condition {
+	return append(e.conditions[:0:0], e.conditions...)
 }
 
-type not struct {
+// Not provides a NOT condition for the given condition.
+func Not(condition Condition) Condition {
+	return &NotExpr{condition}
+}
+
+type NotExpr struct {
 	condition Condition
 }
 
-func (e *not) Match(messageContext ...MessageContext) bool {
+func (e *NotExpr) Match(messageContext ...MessageContext) bool {
 	return !e.condition.Match(messageContext...)
+}
+
+func (e *NotExpr) Condition() Condition {
+	return e.condition
 }

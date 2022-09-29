@@ -16,40 +16,32 @@
  *  limitations under the License.
  */
 
-package logging
+package config
 
 import (
-	"github.com/go-logr/logr"
+	"encoding/json"
+
+	"github.com/mandelsoft/logging"
 )
 
-type ConditionRule struct {
-	conditions []Condition
-	level      int
+func init() {
+	RegisterRule("rule", &ConditionalRule{})
 }
 
-var _ Rule = (*ConditionRule)(nil)
+type ConditionalRule struct {
+	Level      string            `json:"level"`
+	Conditions []json.RawMessage `json:"conditions"`
+}
 
-func NewConditionRule(level int, cond ...Condition) Rule {
-	return &ConditionRule{
-		level:      level,
-		conditions: cond,
+func (r *ConditionalRule) Create(reg Registry) (logging.Rule, error) {
+
+	l, err := logging.ParseLevel(r.Level)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func (r *ConditionRule) Match(l logr.Logger, messageContext ...MessageContext) Logger {
-	for _, c := range r.conditions {
-		if !c.Match(messageContext...) {
-			return nil
-		}
+	conditions, err := ParseConditions(reg, r.Conditions)
+	if err != nil {
+		return nil, err
 	}
-
-	return NewLogger(l.WithSink(WrapSink(r.level, l.GetSink())))
-}
-
-func (r *ConditionRule) Level() int {
-	return r.level
-}
-
-func (r *ConditionRule) Conditions() []Condition {
-	return append(r.conditions[:0:0], r.conditions...)
+	return logging.NewConditionRule(l, conditions...), nil
 }
