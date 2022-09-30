@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sync"
 
 	"sigs.k8s.io/yaml"
 )
@@ -31,6 +32,7 @@ type Factory[T any, R any] interface {
 }
 
 type Scheme[T any, F any] struct {
+	lock           sync.RWMutex
 	factoryContext F
 	none           T
 	prototypes     map[string]reflect.Type
@@ -44,6 +46,9 @@ func NewScheme[T any, F any](f F) *Scheme[T, F] {
 }
 
 func (s *Scheme[T, F]) Copy(f F) *Scheme[T, F] {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	c := NewScheme[T, F](f)
 	for n, p := range s.prototypes {
 		c.prototypes[n] = p
@@ -52,6 +57,9 @@ func (s *Scheme[T, F]) Copy(f F) *Scheme[T, F] {
 }
 
 func (s *Scheme[T, F]) Register(name string, proto Factory[T, F]) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	t := reflect.TypeOf(proto)
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -60,6 +68,9 @@ func (s *Scheme[T, F]) Register(name string, proto Factory[T, F]) {
 }
 
 func (s *Scheme[T, F]) Get(data []byte) (T, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	var m map[string]interface{}
 
 	err := yaml.Unmarshal(data, &m)

@@ -52,7 +52,7 @@ var _ = Describe("context test", func() {
 		Expect("\n" + buf.String()).To(Equal(`
 V[3] info
 V[2] warn
-V[1] error
+ERROR <nil> error
 `))
 	})
 
@@ -71,7 +71,7 @@ V[5] trace
 V[4] debug
 V[3] info
 V[2] warn
-V[1] error
+ERROR <nil> error
 `))
 	})
 
@@ -88,7 +88,7 @@ V[1] error
 
 		Expect("\n" + buf.String()).To(Equal(`
 V[2] warn
-V[1] error
+ERROR <nil> error
 `))
 	})
 
@@ -109,7 +109,7 @@ V[1] error
 
 		Expect("\n" + buf.String()).To(Equal(`
 V[2] warn
-V[1] error
+ERROR <nil> error
 V[4] realm test debug
 `))
 	})
@@ -132,7 +132,7 @@ V[4] realm test debug
 
 		Expect("\n" + buf.String()).To(Equal(`
 V[2] warn
-V[1] error
+ERROR <nil> error
 V[4] prefix/realm test prefix debug
 `))
 	})
@@ -208,6 +208,16 @@ V[4] realm test debug value attr other
 
 		Expect("\n" + buf.String()).To(Equal(`
 V[4] realm test debug value attr test attr other
+`))
+	})
+
+	It("handles regular error level", func() {
+		ctx.Logger().V(logging.ErrorLevel).Info("error")
+
+		fmt.Printf("%s\n", buf.String())
+
+		Expect("\n" + buf.String()).To(Equal(`
+V[1] error
 `))
 	})
 

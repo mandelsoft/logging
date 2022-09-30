@@ -32,28 +32,37 @@ func NewLogger(l logr.Logger) Logger {
 	return &logger{l}
 }
 
-func (l logger) LogError(err error, msg string, keypairs ...interface{}) {
-	l.logger.V(1).Info(msg, append(append(keypairs[:0:0], "error", err), keypairs...))
+func (l *logger) V(delta int) logr.Logger {
+	return l.logger.V(delta)
 }
 
-func (l logger) Error(msg string, keypairs ...interface{}) {
-	l.logger.V(1).Info(msg, keypairs...)
+func (l *logger) LogError(err error, msg string, keypairs ...interface{}) {
+	if l.Enabled(ErrorLevel) {
+		l.logger.Error(err, msg, keypairs...)
+	}
+	//l.logger.V(1).Info(msg, append(append(keypairs[:0:0], "error", err), keypairs...))
 }
 
-func (l logger) Warn(msg string, keypairs ...interface{}) {
-	l.logger.V(2).Info(msg, keypairs...)
+func (l *logger) Error(msg string, keypairs ...interface{}) {
+	if l.Enabled(ErrorLevel) {
+		l.logger.Error(nil, msg, keypairs...)
+	}
 }
 
-func (l logger) Info(msg string, keypairs ...interface{}) {
-	l.logger.V(3).Info(msg, keypairs...)
+func (l *logger) Warn(msg string, keypairs ...interface{}) {
+	l.logger.V(WarnLevel).Info(msg, keypairs...)
 }
 
-func (l logger) Debug(msg string, keypairs ...interface{}) {
-	l.logger.V(4).Info(msg, keypairs...)
+func (l *logger) Info(msg string, keypairs ...interface{}) {
+	l.logger.V(InfoLevel).Info(msg, keypairs...)
 }
 
-func (l logger) Trace(msg string, keypairs ...interface{}) {
-	l.logger.V(5).Info(msg, keypairs...)
+func (l *logger) Debug(msg string, keypairs ...interface{}) {
+	l.logger.V(DebugLevel).Info(msg, keypairs...)
+}
+
+func (l *logger) Trace(msg string, keypairs ...interface{}) {
+	l.logger.V(TraceLevel).Info(msg, keypairs...)
 }
 
 func (l logger) WithName(name string) Logger {

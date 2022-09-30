@@ -93,6 +93,8 @@ type Logger interface {
 	WithName(name string) Logger
 	WithValues(keypairs ...interface{}) Logger
 	Enabled(level int) bool
+
+	V(delta int) logr.Logger
 }
 
 type MessageContext interface {
