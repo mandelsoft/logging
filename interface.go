@@ -109,13 +109,36 @@ type Rule interface {
 }
 
 type Context interface {
+	// GetBaseContext returns the base context for nested logging contexts.
+	GetBaseContext() Context
+	// GetBaseLogger returns the effective logr.Logger used a base logger
+	// for this context.
+	// In case of a nested context, this is the locally set base logger, if set,
+	// or the base logger of the base context.
+	GetBaseLogger() logr.Logger
+	// GetDefaultLevel returns the default log level effective, if no rule matches.
+	// These may be locally defined rules, or, in case of a nested logger,
+	// rules of the base context, also.
+	GetDefaultLevel() int
+	// GetDefaultLogger return the effective default logger used if no rule matches
+	// a message context.
+	GetDefaultLogger() Logger
+
 	SetDefaultLevel(level int)
 	SetBaseLogger(logger logr.Logger)
 
 	AddRule(...Rule)
 	ResetRules()
 
+	// Logger return the effective logger for the given message context.
 	Logger(...MessageContext) Logger
+	// V returns the effective logr.Logger for the given message context with
+	// the given base level.
+	V(level int, mctx ...MessageContext) logr.Logger
+
+	// Evaluate returns the effective logger for the given message context
+	// based of the given logr.Logger.
+	Evaluate(logr.Logger, ...MessageContext) Logger
 }
 
 type Attacher interface {

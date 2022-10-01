@@ -238,6 +238,59 @@ V[1] error
 			Expect((&X{}).Package().Name()).To(Equal("github.com/mandelsoft/logging_test"))
 		})
 	})
+
+	Context("nested contexts", func() {
+		var nested logging.Context
+
+		BeforeEach(func() {
+			nested = logging.NewWithBase(ctx)
+		})
+
+		It("just logs with context realm rule", func() {
+			realm := logging.NewRealm("realm")
+
+			ctx.AddRule(logging.NewConditionRule(logging.WarnLevel))
+			ctx.AddRule(logging.NewConditionRule(logging.DebugLevel, realm))
+
+			nested.Logger().Trace("trace")
+			nested.Logger().Debug("debug")
+			nested.Logger().Info("info")
+			nested.Logger().Warn("warn")
+			nested.Logger().Error("error")
+			nested.Logger(realm).Debug("test debug")
+
+			fmt.Printf("%s\n", buf.String())
+
+			Expect("\n" + buf.String()).To(Equal(`
+V[2] warn
+ERROR <nil> error
+V[4] realm test debug
+`))
+		})
+
+		It("just logs with nested context realm rule", func() {
+			realm := logging.NewRealm("realm")
+
+			ctx.AddRule(logging.NewConditionRule(logging.WarnLevel))
+			nested.AddRule(logging.NewConditionRule(logging.DebugLevel, realm))
+
+			nested.Logger().Trace("trace")
+			nested.Logger().Debug("debug")
+			nested.Logger().Info("info")
+			nested.Logger().Warn("warn")
+			nested.Logger().Error("error")
+			nested.Logger(realm).Debug("test debug")
+			ctx.Logger(realm).Debug("ctx test debug")
+
+			fmt.Printf("%s\n", buf.String())
+
+			Expect("\n" + buf.String()).To(Equal(`
+V[2] warn
+ERROR <nil> error
+V[4] realm test debug
+`))
+		})
+	})
 })
 
 type X struct{}
