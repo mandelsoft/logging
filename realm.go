@@ -19,6 +19,7 @@
 package logging
 
 import (
+	"runtime"
 	"strings"
 )
 
@@ -66,4 +67,23 @@ func (r *realm) Attach(l Logger) Logger {
 		return l
 	}
 	return l.WithName(r.name)
+}
+
+func (r *realm) String() string {
+	return r.name
+}
+
+func Package() Realm {
+	pc, _, _, ok := runtime.Caller(1)
+	if !ok {
+		return NewRealm("<unknown>")
+	}
+
+	funcName := runtime.FuncForPC(pc).Name()
+	lastSlash := strings.LastIndexByte(funcName, '/')
+	if lastSlash < 0 {
+		lastSlash = 0
+	}
+	firstDot := strings.IndexByte(funcName[lastSlash:], '.') + lastSlash
+	return NewRealm(funcName[:firstDot])
 }

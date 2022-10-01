@@ -22,12 +22,14 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/mandelsoft/logging"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/mandelsoft/logging"
 	"github.com/tonglil/buflogr"
 )
+
+var pkg = logging.Package()
 
 var _ = Describe("context test", func() {
 	var buf bytes.Buffer
@@ -221,4 +223,27 @@ V[1] error
 `))
 	})
 
+	Context("package realm", func() {
+		local := "github.com/mandelsoft/logging_test"
+
+		It("provides package", func() {
+			Expect(pkg.Name()).To(Equal(local))
+		})
+
+		It("provides package in function expression", func() {
+			Expect(logging.Package().Name()).To(Equal("github.com/mandelsoft/logging_test"))
+		})
+
+		It("provides package in struct nested function", func() {
+			Expect((&X{}).Package().Name()).To(Equal("github.com/mandelsoft/logging_test"))
+		})
+	})
 })
+
+type X struct{}
+
+func (x *X) Package() logging.Realm {
+	return func() logging.Realm {
+		return logging.Package()
+	}()
+}

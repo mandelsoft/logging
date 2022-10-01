@@ -41,10 +41,10 @@ name components separated by a slash (/).
 
 Alternatively `NewRealmPrefix(...)` can be used to match a complete realm hierarchy.
 
-In a package the realm can be defined as local variable.
+A realm for the actual package can be defined as local variable.
 
 ```go
-var realm = logging.NewRealm("github.com/mandelsoft/spiff")
+var realm = logging.Package()
 ```
 
 Instead of passing `Logger`s around, now the logging `Context` is used.
