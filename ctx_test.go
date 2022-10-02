@@ -291,6 +291,33 @@ V[4] realm test debug
 `))
 		})
 	})
+
+	Context("shifted", func() {
+		var shifted logging.Context
+
+		BeforeEach(func() {
+			shifted = logging.New(buflogr.NewWithBuffer(&buf).V(2))
+		})
+
+		It("shift initial level", func() {
+			shifted.Logger().Info("info")
+			Expect("\n" + buf.String()).To(Equal(`
+V[5] info
+`))
+		})
+		It("keeps error", func() {
+			shifted.Logger().Error("error")
+			Expect("\n" + buf.String()).To(Equal(`
+ERROR <nil> error
+`))
+		})
+
+		It("disables error", func() {
+			shifted.SetDefaultLevel(0)
+			shifted.Logger().Error("error")
+			Expect(buf.String()).To(Equal(""))
+		})
+	})
 })
 
 type X struct{}

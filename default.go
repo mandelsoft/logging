@@ -18,12 +18,29 @@
 
 package logging
 
-var defaultContext = NewDefault()
+var defaultContext = ContextReference{NewDefault()}
 
+// SetDefaultContext sets the default context.
+// It changes all usages based on the result of
+// DefaultContext().
+// If the rules of the actual default context should be kept
+// use it as base context or copy the rules with
+// DefaultContext().AddTo(newContext) before setting the new
+// context as default context (potentially unsafe because of race condition).
+func SetDefaultContext(ctx Context) {
+	defaultContext.Context = ctx
+}
+
+// DefaultContext returns a context, which always reflects
+// the actually set default context.
 func DefaultContext() Context {
 	return defaultContext
 }
 
 func Log(messageContext ...MessageContext) Logger {
 	return defaultContext.Logger(messageContext...)
+}
+
+type ContextReference struct {
+	Context
 }

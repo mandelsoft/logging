@@ -11,9 +11,17 @@ The rule set is configured for a logging context:
 ```
 
 Any `logr.Logger` can be passed here, the level for this logger
-globally filters the log levels of the provided log messages.
+is used as base level for the `ErrorLevel` of loggers provided
+by the logging context.
 If the full control should be handed over to the logging context, 
-the maximum log level should be used for this logger.
+the maximum log level should be used for the sink of this logger.
+
+If the used base level should always be 0, the base logger has to 
+be set with plain mode:
+
+```go
+    ctx.SetBaseLogger(logrLogger, true)
+```
 
 Now you can add rules controlling the accepted log levels for dedicated log 
 locations. First, a default log level can be set:
@@ -72,6 +80,11 @@ obtained by using the `V` method:
 The sink for this logger is configured to accept messages according to the
 log level determined by th rule set of the logging context for the given
 message context.
+
+*Remark*: Returned `logr.Logger`s are always using a sink with the base level 0,
+which is potentially shifted to the level of the base `logr.Logger`
+used to setup the context, when forwarding to the original sink. This means
+they are always directly using the log levels 0..*n*.
 
 If no rules are configured, the default logger of the context is used
 independently of the  given arguments. The given message context information is

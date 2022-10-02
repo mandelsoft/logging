@@ -125,10 +125,18 @@ type Context interface {
 	GetDefaultLogger() Logger
 
 	SetDefaultLevel(level int)
-	SetBaseLogger(logger logr.Logger)
+	// SetBaseLogger set a new base logger.
+	// if the optional parameter plain is set to true, the base logger
+	// is rebased to 0.
+	// Otherwise, it is taken from the given logger. This means
+	// ErrorLevel is mapped to the log level of the given logger.
+	// Although the error output is filtered by this log level by the
+	// original sink, error level output, if enabled,  is passed as Error to the sink.
+	SetBaseLogger(logger logr.Logger, plain ...bool)
 
 	AddRule(...Rule)
 	ResetRules()
+	AddRulesTo(ctx Context)
 
 	// Logger return the effective logger for the given message context.
 	Logger(...MessageContext) Logger

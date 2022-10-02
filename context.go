@@ -41,9 +41,10 @@ func NewDefault() Context {
 	return NewWithBase(nil)
 }
 
-func New(base logr.Logger) Context {
+func New(logger logr.Logger) Context {
+	sink := shifted(logger)
 	ctx := &context{
-		baseLogger: &base,
+		baseLogger: &sink,
 		level:      -1,
 	}
 	ctx.setDefaultLevel(InfoLevel)
@@ -122,14 +123,20 @@ func (c *context) SetDefaultLevel(level int) {
 
 func (c *context) setDefaultLevel(level int) {
 	c.level = level
-	c.defaultLogger = NewLogger(c.baseLogger.WithSink(WrapSink(level, c.baseLogger.GetSink())))
+	c.defaultLogger = NewLogger(c.baseLogger.WithSink(WrapSink(level, 0, c.baseLogger.GetSink())))
 }
 
-func (c *context) SetBaseLogger(logger logr.Logger) {
+func (c *context) SetBaseLogger(logger logr.Logger, plain ...bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	c.baseLogger = &logger
+	if len(plain) == 0 || !plain[0] {
+		sink := shifted(logger)
+		c.baseLogger = &sink
+	} else {
+		c.baseLogger = &logger
+
+	}
 	c.setDefaultLevel(c.level)
 }
 
@@ -139,9 +146,20 @@ func (c *context) AddRule(rules ...Rule) {
 
 	for _, rule := range rules {
 		if rule != nil {
-			c.rules = append(append([]Rule{}, rule), c.rules...)
+			c.rules = append(append(c.rules[:0:0], rule), c.rules...)
 		}
 	}
+}
+
+func (c *context) AddRulesTo(ctx Context) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	rules := make([]Rule, len(c.rules))
+	for i := range rules {
+		rules[i] = c.rules[len(c.rules)-i-1]
+	}
+	ctx.AddRule(rules...)
 }
 
 func (c *context) ResetRules() {
@@ -189,4 +207,24 @@ func (c *context) evaluate(base logr.Logger, messageContext ...MessageContext) L
 		return c.base.Evaluate(base, messageContext...)
 	}
 	return nil
+}
+
+type levelCatcher struct {
+	sink
+}
+
+func (h *levelCatcher) Enabled(l int) bool {
+	h.level = l
+	return false
+}
+
+func getLogrLevel(l logr.Logger) int {
+	var s levelCatcher
+	l.WithSink(&s).Enabled()
+	return s.level
+}
+
+func shifted(logger logr.Logger) logr.Logger {
+	level := getLogrLevel(logger)
+	return logr.New(WrapSink(level+9, level, logger.GetSink()))
 }

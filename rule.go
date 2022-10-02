@@ -43,7 +43,7 @@ func (r *ConditionRule) Match(l logr.Logger, messageContext ...MessageContext) L
 		}
 	}
 
-	return NewLogger(l.WithSink(WrapSink(r.level, l.GetSink())))
+	return NewLogger(l.WithSink(WrapSink(r.level, 0, l.GetSink())))
 }
 
 func (r *ConditionRule) Level() int {

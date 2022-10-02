@@ -24,14 +24,16 @@ import (
 
 type sink struct {
 	level int
+	delta int
 	sink  logr.LogSink
 }
 
 var _ logr.LogSink = (*sink)(nil)
 
-func WrapSink(level int, orig logr.LogSink) logr.LogSink {
+func WrapSink(level, delta int, orig logr.LogSink) logr.LogSink {
 	return &sink{
 		level: level,
+		delta: delta,
 		sink:  orig,
 	}
 }
@@ -41,14 +43,18 @@ func (s *sink) Init(info logr.RuntimeInfo) {
 }
 
 func (s *sink) Enabled(level int) bool {
-	return s.level >= level
+	// leave the final (non-local) decision to the underlying sink
+	// to offer the possibility to disable local error logging
+	// independent of the underlying sink, to stick to the logr
+	// error contract (avoiding the sink level to disable error log).
+	return s.level >= level // && s.sink.Enabled(level+s.delta)
 }
 
 func (s *sink) Info(level int, msg string, keysAndValues ...interface{}) {
 	if !s.Enabled(level) {
 		return
 	}
-	s.sink.Info(level, msg, keysAndValues...)
+	s.sink.Info(level+s.delta, msg, keysAndValues...)
 }
 
 func (s sink) Error(err error, msg string, keysAndValues ...interface{}) {
@@ -58,6 +64,7 @@ func (s sink) Error(err error, msg string, keysAndValues ...interface{}) {
 func (s *sink) WithValues(keysAndValues ...interface{}) logr.LogSink {
 	return &sink{
 		level: s.level,
+		delta: s.delta,
 		sink:  s.sink.WithValues(keysAndValues...),
 	}
 }
@@ -65,6 +72,7 @@ func (s *sink) WithValues(keysAndValues ...interface{}) logr.LogSink {
 func (s sink) WithName(name string) logr.LogSink {
 	return &sink{
 		level: s.level,
+		delta: s.delta,
 		sink:  s.sink.WithName(name),
 	}
 }
