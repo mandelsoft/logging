@@ -23,56 +23,55 @@ import (
 )
 
 type logger struct {
-	logger logr.Logger
+	sink logr.LogSink
 }
 
 var _ Logger = (*logger)(nil)
 
-func NewLogger(l logr.Logger) Logger {
-	return &logger{l}
+func NewLogger(s logr.LogSink) Logger {
+	return &logger{s}
 }
 
 func (l *logger) V(delta int) logr.Logger {
-	return l.logger.V(delta)
+	return logr.New(l.sink).V(delta)
 }
 
 func (l *logger) LogError(err error, msg string, keypairs ...interface{}) {
 	if l.Enabled(ErrorLevel) {
-		l.logger.Error(err, msg, keypairs...)
+		l.sink.Error(err, msg, keypairs...)
 	}
-	//l.logger.V(1).Info(msg, append(append(keypairs[:0:0], "error", err), keypairs...))
 }
 
 func (l *logger) Error(msg string, keypairs ...interface{}) {
 	if l.Enabled(ErrorLevel) {
-		l.logger.Error(nil, msg, keypairs...)
+		l.sink.Error(nil, msg, keypairs...)
 	}
 }
 
 func (l *logger) Warn(msg string, keypairs ...interface{}) {
-	l.logger.V(WarnLevel).Info(msg, keypairs...)
+	l.sink.Info(WarnLevel, msg, keypairs...)
 }
 
 func (l *logger) Info(msg string, keypairs ...interface{}) {
-	l.logger.V(InfoLevel).Info(msg, keypairs...)
+	l.sink.Info(InfoLevel, msg, keypairs...)
 }
 
 func (l *logger) Debug(msg string, keypairs ...interface{}) {
-	l.logger.V(DebugLevel).Info(msg, keypairs...)
+	l.sink.Info(DebugLevel, msg, keypairs...)
 }
 
 func (l *logger) Trace(msg string, keypairs ...interface{}) {
-	l.logger.V(TraceLevel).Info(msg, keypairs...)
+	l.sink.Info(TraceLevel, msg, keypairs...)
 }
 
 func (l logger) WithName(name string) Logger {
-	return &logger{l.logger.WithName(name)}
+	return &logger{l.sink.WithName(name)}
 }
 
 func (l logger) WithValues(keypairs ...interface{}) Logger {
-	return &logger{l.logger.WithValues(keypairs...)}
+	return &logger{l.sink.WithValues(keypairs...)}
 }
 
 func (l logger) Enabled(level int) bool {
-	return l.logger.GetSink().Enabled(level)
+	return l.sink.Enabled(level)
 }

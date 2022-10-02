@@ -36,6 +36,7 @@ type context struct {
 }
 
 var _ Context = (*context)(nil)
+var _ ContextProvider = (*context)(nil)
 
 func NewDefault() Context {
 	return NewWithBase(nil)
@@ -47,13 +48,15 @@ func New(logger logr.Logger) Context {
 		baseLogger: &sink,
 		level:      -1,
 	}
-	ctx.setDefaultLevel(InfoLevel)
+	ctx.level = InfoLevel
+	ctx.SetBaseLogger(logger)
 	return ctx
 }
 
 func NewWithBase(base Context, baselogger ...logr.Logger) Context {
 	ctx := &context{
-		base: base,
+		base:  base,
+		level: -1,
 	}
 	if len(baselogger) > 0 {
 		ctx.SetBaseLogger(baselogger[0])
@@ -61,9 +64,14 @@ func NewWithBase(base Context, baselogger ...logr.Logger) Context {
 	if base == nil && len(baselogger) == 0 {
 		l := logrus.New()
 		l.SetLevel(9)
+		ctx.level = InfoLevel
 		ctx.SetBaseLogger(logrusr.New(l))
 	}
 	return ctx
+}
+
+func (c *context) LoggingContext() Context {
+	return c
 }
 
 func (c *context) GetBaseLogger() logr.Logger {
@@ -122,8 +130,10 @@ func (c *context) SetDefaultLevel(level int) {
 }
 
 func (c *context) setDefaultLevel(level int) {
-	c.level = level
-	c.defaultLogger = NewLogger(c.baseLogger.WithSink(WrapSink(level, 0, c.baseLogger.GetSink())))
+	// TODO: don't materialize inherited level
+	c.level = c.getDefaultLevel()
+	base := c.getBaseLogger()
+	c.defaultLogger = NewLogger(WrapSink(level, 0, base.GetSink()))
 }
 
 func (c *context) SetBaseLogger(logger logr.Logger, plain ...bool) {
@@ -137,7 +147,8 @@ func (c *context) SetBaseLogger(logger logr.Logger, plain ...bool) {
 		c.baseLogger = &logger
 
 	}
-	c.setDefaultLevel(c.level)
+	// TODO: don't materialize inherited level
+	c.setDefaultLevel(c.getDefaultLevel())
 }
 
 func (c *context) AddRule(rules ...Rule) {

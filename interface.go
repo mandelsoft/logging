@@ -108,7 +108,18 @@ type Rule interface {
 	Match(logr.Logger, ...MessageContext) Logger
 }
 
+// ContextProvider is able to provide access to a logging context.
+type ContextProvider interface {
+	LoggingContext() Context
+}
+
+// Context describes the interface of a logging context.
+// A logging context determines effective loggers for
+// a given message context based on a set of rules used
+// to map a message context to an effective logger.
 type Context interface {
+	ContextProvider
+
 	// GetBaseContext returns the base context for nested logging contexts.
 	GetBaseContext() Context
 	// GetBaseLogger returns the effective logr.Logger used a base logger
@@ -149,6 +160,9 @@ type Context interface {
 	Evaluate(logr.Logger, ...MessageContext) Logger
 }
 
+// Attacher is an optional interface, which can be implemented by a dedicated
+// type of message context. If available it is used to enrich the attributes
+// of a determined logger to describe the given context.
 type Attacher interface {
 	Attach(l Logger) Logger
 }

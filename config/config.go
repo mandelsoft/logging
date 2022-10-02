@@ -26,7 +26,7 @@ import (
 )
 
 type Config struct {
-	DefaultLevel string `json:"defaultLevel"`
+	DefaultLevel string `json:"defaultLevel,omitempty"`
 	Rules        []json.RawMessage
 }
 
@@ -34,6 +34,10 @@ func (c *Config) UnmarshalFrom(data []byte) error {
 	return yaml.Unmarshal(data, c)
 }
 
-func Configure(ctx logging.Context, data []byte) error {
-	return _registry.Configure(ctx, data)
+func ConfigureWithData(ctx logging.Context, data []byte) error {
+	return _registry.ConfigureWithData(ctx, data)
+}
+
+func Configure(ctx logging.Context, cfg *Config) error {
+	return _registry.Configure(ctx, cfg)
 }

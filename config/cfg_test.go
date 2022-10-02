@@ -211,7 +211,7 @@ rules:
     conditions:
     - realm: test
 `
-			err := reg.Configure(ctx, []byte(data))
+			err := reg.ConfigureWithData(ctx, []byte(data))
 			Expect(err).To(Succeed())
 
 			ctx.Logger().Debug("debug")
@@ -240,7 +240,7 @@ rules:
             value:
                value: testvalue
 `
-			err := reg.Configure(ctx, []byte(data))
+			err := reg.ConfigureWithData(ctx, []byte(data))
 			Expect(err).To(Succeed())
 
 			ctx.Logger().Trace("debug")

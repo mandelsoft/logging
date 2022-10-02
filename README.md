@@ -152,7 +152,7 @@ or
 ## Configuration
 
 It is possible to configure a logging context from a textual configuration
-using `config.Configure(ctx, bytedata)`:
+using `config.ConfigureWithData(ctx, bytedata)`:
 
 ```yaml
 defaultLevel: Info

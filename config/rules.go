@@ -34,7 +34,6 @@ type ConditionalRule struct {
 }
 
 func (r *ConditionalRule) Create(reg Registry) (logging.Rule, error) {
-
 	l, err := logging.ParseLevel(r.Level)
 	if err != nil {
 		return nil, err

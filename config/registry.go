@@ -62,7 +62,8 @@ type Registry interface {
 	CreateRule(data []byte) (logging.Rule, error)
 	CreateValue(data []byte) (interface{}, error)
 
-	Configure(ctx logging.Context, data []byte) error
+	Configure(ctx logging.Context, cfg *Config) error
+	ConfigureWithData(ctx logging.Context, data []byte) error
 
 	Copy() Registry
 }
@@ -114,19 +115,14 @@ func (r *registry) CreateValue(data []byte) (interface{}, error) {
 	return r.values.Get(data)
 }
 
-func (r *registry) Configure(ctx logging.Context, data []byte) error {
-	var cfg Config
-
-	err := cfg.UnmarshalFrom(data)
-	if err != nil {
-		return err
+func (r *registry) Configure(ctx logging.Context, cfg *Config) error {
+	if cfg.DefaultLevel != "" {
+		l, err := logging.ParseLevel(cfg.DefaultLevel)
+		if err != nil {
+			return fmt.Errorf("default level: %w", err)
+		}
+		ctx.SetDefaultLevel(l)
 	}
-
-	l, err := logging.ParseLevel(cfg.DefaultLevel)
-	if err != nil {
-		return fmt.Errorf("default level: %w", err)
-	}
-	ctx.SetDefaultLevel(l)
 
 	for i, d := range cfg.Rules {
 		rule, err := r.CreateRule(d)
@@ -136,6 +132,17 @@ func (r *registry) Configure(ctx logging.Context, data []byte) error {
 		ctx.AddRule(rule)
 	}
 	return nil
+}
+
+func (r *registry) ConfigureWithData(ctx logging.Context, data []byte) error {
+	var cfg Config
+
+	err := cfg.UnmarshalFrom(data)
+	if err != nil {
+		return err
+	}
+
+	return r.Configure(ctx, &cfg)
 }
 
 func ParseConditions(r Registry, list []json.RawMessage) ([]logging.Condition, error) {
