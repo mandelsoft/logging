@@ -76,3 +76,72 @@ func (s sink) WithName(name string) logr.LogSink {
 		sink:  s.sink.WithName(name),
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+func AsLevelFunc(lvl int) LevelFunc {
+	return func() int {
+		return lvl
+	}
+}
+
+func AsSinkFunc(s logr.LogSink) SinkFunc {
+	return func() logr.LogSink {
+		return s
+	}
+}
+
+type dynsink struct {
+	level LevelFunc
+	delta int
+	sink  SinkFunc
+}
+
+var _ logr.LogSink = (*sink)(nil)
+
+func DynSink(level LevelFunc, delta int, orig SinkFunc) logr.LogSink {
+	return &dynsink{
+		level: level,
+		delta: delta,
+		sink:  orig,
+	}
+}
+
+func (s *dynsink) Init(info logr.RuntimeInfo) {
+	s.sink().Init(info)
+}
+
+func (s *dynsink) Enabled(level int) bool {
+	// leave the final (non-local) decision to the underlying sink
+	// to offer the possibility to disable local error logging
+	// independent of the underlying sink, to stick to the logr
+	// error contract (avoiding the sink level to disable error log).
+	return s.level() >= level // && s.sink.Enabled(level+s.delta)
+}
+
+func (s *dynsink) Info(level int, msg string, keysAndValues ...interface{}) {
+	if !s.Enabled(level) {
+		return
+	}
+	s.sink().Info(level+s.delta, msg, keysAndValues...)
+}
+
+func (s dynsink) Error(err error, msg string, keysAndValues ...interface{}) {
+	s.sink().Error(err, msg, keysAndValues...)
+}
+
+func (s *dynsink) WithValues(keysAndValues ...interface{}) logr.LogSink {
+	return &dynsink{
+		level: s.level,
+		delta: s.delta,
+		sink:  func() logr.LogSink { return s.sink().WithValues(keysAndValues...) },
+	}
+}
+
+func (s dynsink) WithName(name string) logr.LogSink {
+	return &dynsink{
+		level: s.level,
+		delta: s.delta,
+		sink:  func() logr.LogSink { return s.sink().WithName(name) },
+	}
+}

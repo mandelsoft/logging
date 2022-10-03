@@ -97,21 +97,30 @@ type Logger interface {
 	V(delta int) logr.Logger
 }
 
+// MessageContext is an object providing context information for
+// a log message.
 type MessageContext interface {
 }
 
+// Condition matches a given message context.
+// It returns true, if the condition matches the context.
 type Condition interface {
 	Match(...MessageContext) bool
 }
 
+// Rule matches a given message context and returns
+// an appropriate logger
 type Rule interface {
-	Match(logr.Logger, ...MessageContext) Logger
+	Match(SinkFunc, ...MessageContext) Logger
 }
 
 // ContextProvider is able to provide access to a logging context.
 type ContextProvider interface {
 	LoggingContext() Context
 }
+
+type LevelFunc func() int
+type SinkFunc func() logr.LogSink
 
 // Context describes the interface of a logging context.
 // A logging context determines effective loggers for
@@ -122,11 +131,11 @@ type Context interface {
 
 	// GetBaseContext returns the base context for nested logging contexts.
 	GetBaseContext() Context
-	// GetBaseLogger returns the effective logr.Logger used a base logger
+	// GetSink returns the effective logr.LOgSink used as base logger
 	// for this context.
-	// In case of a nested context, this is the locally set base logger, if set,
-	// or the base logger of the base context.
-	GetBaseLogger() logr.Logger
+	// In case of a nested context, this is the locally set sink, if set,
+	// or the sink of the base context.
+	GetSink() logr.LogSink
 	// GetDefaultLevel returns the default log level effective, if no rule matches.
 	// These may be locally defined rules, or, in case of a nested logger,
 	// rules of the base context, also.
@@ -134,15 +143,16 @@ type Context interface {
 	// GetDefaultLogger return the effective default logger used if no rule matches
 	// a message context.
 	GetDefaultLogger() Logger
-
+	// SetDefaultLevel sets the default logging level to use for provided
+	// Loggers, if no rule matches.
 	SetDefaultLevel(level int)
-	// SetBaseLogger set a new base logger.
-	// if the optional parameter plain is set to true, the base logger
-	// is rebased to 0.
-	// Otherwise, it is taken from the given logger. This means
+	// SetBaseLogger sets a new base logger.
+	// If the optional parameter plain is set to true, the base logger
+	// is rebased to the absolute logr level 0.
+	// Otherwise, the base log level is taken from the given logger. This means
 	// ErrorLevel is mapped to the log level of the given logger.
 	// Although the error output is filtered by this log level by the
-	// original sink, error level output, if enabled,  is passed as Error to the sink.
+	// original sink, error level output, if enabled, is passed as Error to the sink.
 	SetBaseLogger(logger logr.Logger, plain ...bool)
 
 	AddRule(...Rule)
@@ -156,8 +166,8 @@ type Context interface {
 	V(level int, mctx ...MessageContext) logr.Logger
 
 	// Evaluate returns the effective logger for the given message context
-	// based of the given logr.Logger.
-	Evaluate(logr.Logger, ...MessageContext) Logger
+	// based on the given logr.LogSink.
+	Evaluate(SinkFunc, ...MessageContext) Logger
 }
 
 // Attacher is an optional interface, which can be implemented by a dedicated

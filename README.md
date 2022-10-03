@@ -1,6 +1,6 @@
 # Logging for Go with context-specific Log Level Settings
 
-This package provides a simple wrapper around the [logr](https://ggithub.com/go-logr/logr)
+This package provides a wrapper around the [logr](https://ggithub.com/go-logr/logr)
 logging system supporting a rule based approach to enable log levels
 for dedicated message contexts specified at the logging location.
 
@@ -115,8 +115,8 @@ The first matching rule defines the finally used log level restriction and log
 sink.
 
 A `Rule` has the complete control over composing an appropriate logger.
-The default `ConditionRule` just enables the specified log level,
-if all rules match the actual log request.
+The default condition based rule just enables the specified log level,
+if all conditions match the actual log request.
 
 For more complex conditions it is possible to compose conditions
 using an `Or`, `And`, or `Not` condition.

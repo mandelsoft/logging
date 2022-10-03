@@ -18,10 +18,6 @@
 
 package logging
 
-import (
-	"github.com/go-logr/logr"
-)
-
 type ConditionRule struct {
 	conditions []Condition
 	level      int
@@ -36,14 +32,14 @@ func NewConditionRule(level int, cond ...Condition) Rule {
 	}
 }
 
-func (r *ConditionRule) Match(l logr.Logger, messageContext ...MessageContext) Logger {
+func (r *ConditionRule) Match(sink SinkFunc, messageContext ...MessageContext) Logger {
 	for _, c := range r.conditions {
 		if !c.Match(messageContext...) {
 			return nil
 		}
 	}
 
-	return NewLogger(WrapSink(r.level, 0, l.GetSink()))
+	return NewLogger(DynSink(AsLevelFunc(r.level), 0, sink))
 }
 
 func (r *ConditionRule) Level() int {

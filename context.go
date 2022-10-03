@@ -27,12 +27,11 @@ import (
 )
 
 type context struct {
-	lock          sync.RWMutex
-	base          Context
-	level         int
-	baseLogger    *logr.Logger
-	defaultLogger Logger
-	rules         []Rule
+	lock  sync.RWMutex
+	base  Context
+	level int
+	sink  logr.LogSink
+	rules []Rule
 }
 
 var _ Context = (*context)(nil)
@@ -45,11 +44,10 @@ func NewDefault() Context {
 func New(logger logr.Logger) Context {
 	sink := shifted(logger)
 	ctx := &context{
-		baseLogger: &sink,
-		level:      -1,
+		sink:  sink,
+		level: -1,
 	}
 	ctx.level = InfoLevel
-	ctx.SetBaseLogger(logger)
 	return ctx
 }
 
@@ -74,18 +72,18 @@ func (c *context) LoggingContext() Context {
 	return c
 }
 
-func (c *context) GetBaseLogger() logr.Logger {
+func (c *context) GetSink() logr.LogSink {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	return c.getBaseLogger()
+	return c.getSink()
 }
 
-func (c *context) getBaseLogger() logr.Logger {
-	if c.baseLogger != nil {
-		return *c.baseLogger
+func (c *context) getSink() logr.LogSink {
+	if c.sink != nil {
+		return c.sink
 	}
-	return c.base.GetBaseLogger()
+	return c.base.GetSink()
 }
 
 func (c *context) GetBaseContext() Context {
@@ -103,10 +101,7 @@ func (c *context) GetDefaultLogger() Logger {
 }
 
 func (c *context) getDefaultLogger() Logger {
-	if c.defaultLogger != nil {
-		return c.defaultLogger
-	}
-	return c.base.GetDefaultLogger()
+	return NewLogger(DynSink(c.GetDefaultLevel, 0, c.GetSink))
 }
 
 func (c *context) GetDefaultLevel() int {
@@ -130,10 +125,7 @@ func (c *context) SetDefaultLevel(level int) {
 }
 
 func (c *context) setDefaultLevel(level int) {
-	// TODO: don't materialize inherited level
-	c.level = c.getDefaultLevel()
-	base := c.getBaseLogger()
-	c.defaultLogger = NewLogger(WrapSink(level, 0, base.GetSink()))
+	c.level = level
 }
 
 func (c *context) SetBaseLogger(logger logr.Logger, plain ...bool) {
@@ -141,14 +133,10 @@ func (c *context) SetBaseLogger(logger logr.Logger, plain ...bool) {
 	defer c.lock.Unlock()
 
 	if len(plain) == 0 || !plain[0] {
-		sink := shifted(logger)
-		c.baseLogger = &sink
+		c.sink = shifted(logger)
 	} else {
-		c.baseLogger = &logger
-
+		c.sink = logger.GetSink()
 	}
-	// TODO: don't materialize inherited level
-	c.setDefaultLevel(c.getDefaultLevel())
 }
 
 func (c *context) AddRule(rules ...Rule) {
@@ -184,7 +172,7 @@ func (c *context) Logger(messageContext ...MessageContext) Logger {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	l := c.evaluate(c.getBaseLogger(), messageContext...)
+	l := c.evaluate(c.GetSink, messageContext...)
 	if l != nil {
 		return l
 	}
@@ -195,14 +183,14 @@ func (c *context) V(level int, messageContext ...MessageContext) logr.Logger {
 	return c.Logger(messageContext...).V(level)
 }
 
-func (c *context) Evaluate(base logr.Logger, messageContext ...MessageContext) Logger {
+func (c *context) Evaluate(base SinkFunc, messageContext ...MessageContext) Logger {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
 	return c.evaluate(base, messageContext...)
 }
 
-func (c *context) evaluate(base logr.Logger, messageContext ...MessageContext) Logger {
+func (c *context) evaluate(base SinkFunc, messageContext ...MessageContext) Logger {
 	for _, rule := range c.rules {
 		l := rule.Match(base, messageContext...)
 		if l != nil {
@@ -235,7 +223,7 @@ func getLogrLevel(l logr.Logger) int {
 	return s.level
 }
 
-func shifted(logger logr.Logger) logr.Logger {
+func shifted(logger logr.Logger) logr.LogSink {
 	level := getLogrLevel(logger)
-	return logr.New(WrapSink(level+9, level, logger.GetSink()))
+	return WrapSink(level+9, level, logger.GetSink())
 }

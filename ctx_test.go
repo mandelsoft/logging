@@ -290,6 +290,67 @@ ERROR <nil> error
 V[4] realm test debug
 `))
 		})
+
+		Context("dynamic changes", func() {
+			It("adapts provided default logger", func() {
+				logger := nested.Logger()
+				logger.Info("info before")
+				logger.Debug("debug before")
+
+				ctx.SetDefaultLevel(logging.DebugLevel)
+				logger.Info("info after")
+				logger.Debug("debug after")
+
+				Expect("\n" + buf.String()).To(Equal(`
+V[3] info before
+V[3] info after
+V[4] debug after
+`))
+			})
+			It("adapts provided sink", func() {
+				var buf bytes.Buffer
+				def := buflogr.NewWithBuffer(&buf)
+				ctx.SetBaseLogger(def)
+
+				logger := nested.Logger()
+				logger.Info("info before")
+				logger.Debug("debug before")
+
+				ctx.SetDefaultLevel(logging.DebugLevel)
+				logger.Info("info after")
+				logger.Debug("debug after")
+
+				Expect("\n" + buf.String()).To(Equal(`
+V[3] info before
+V[3] info after
+V[4] debug after
+`))
+			})
+			It("adapts provided ruke based logger", func() {
+				tag := logging.NewTag("tag")
+
+				nested.AddRule(logging.NewConditionRule(logging.DebugLevel, tag))
+				logger := nested.Logger(tag)
+
+				var buf bytes.Buffer
+				def := buflogr.NewWithBuffer(&buf)
+				ctx.SetBaseLogger(def)
+
+				logger.Info("info before")
+				logger.Debug("debug before")
+
+				ctx.SetDefaultLevel(logging.DebugLevel)
+				logger.Info("info after")
+				logger.Debug("debug after")
+
+				Expect("\n" + buf.String()).To(Equal(`
+V[3] info before
+V[4] debug before
+V[3] info after
+V[4] debug after
+`))
+			})
+		})
 	})
 
 	Context("shifted", func() {

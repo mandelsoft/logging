@@ -18,7 +18,7 @@
 
 package logging
 
-var defaultContext = ContextReference{NewDefault()}
+var defaultContext = &ContextReference{NewDefault()}
 
 // SetDefaultContext sets the default context.
 // It changes all usages based on the result of
