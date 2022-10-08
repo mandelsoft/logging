@@ -129,8 +129,6 @@ type SinkFunc func() logr.LogSink
 type Context interface {
 	ContextProvider
 
-	// GetBaseContext returns the base context for nested logging contexts.
-	GetBaseContext() Context
 	// GetSink returns the effective logr.LOgSink used as base logger
 	// for this context.
 	// In case of a nested context, this is the locally set sink, if set,
@@ -168,6 +166,10 @@ type Context interface {
 	// Evaluate returns the effective logger for the given message context
 	// based on the given logr.LogSink.
 	Evaluate(SinkFunc, ...MessageContext) Logger
+
+	// Tree provides an interface for the context intended for
+	// context implementations to work together in a context tree.
+	Tree() ContextSupport
 }
 
 // Attacher is an optional interface, which can be implemented by a dedicated
