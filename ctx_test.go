@@ -35,6 +35,8 @@ var _ = Describe("context test", func() {
 	var buf bytes.Buffer
 	var ctx logging.Context
 
+	buflogr.NameSeparator = ":"
+
 	BeforeEach(func() {
 		buf.Reset()
 		def := buflogr.NewWithBuffer(&buf)
@@ -237,6 +239,50 @@ V[1] error
 		It("provides package in struct nested function", func() {
 			Expect((&X{}).Package().Name()).To(Equal("github.com/mandelsoft/logging_test"))
 		})
+	})
+
+	Context("with standard message context", func() {
+		It("adds standard message context", func() {
+			realm := logging.NewRealm("test")
+			enriched := ctx.WithContext(realm)
+			ctx.AddRule(logging.NewConditionRule(logging.DebugLevel, realm))
+
+			enriched.Logger().Debug("debug pkg")
+			enriched.Logger().Info("info pkg")
+			ctx.Logger().Debug("debug plain")
+			ctx.Logger().Info("info plain")
+
+			fmt.Printf("\n" + buf.String())
+			Expect("\n" + buf.String()).To(Equal(`
+V[4] test debug pkg
+V[3] test info pkg
+V[3] info plain
+`))
+		})
+
+		It("adds nested standard message context", func() {
+			realm := logging.NewRealm("test")
+			enriched := ctx.WithContext(realm)
+			enriched2 := enriched.WithContext(logging.NewRealm("detail"))
+			ctx.AddRule(logging.NewConditionRule(logging.DebugLevel, realm))
+
+			enriched2.Logger().Debug("debug detail")
+			enriched2.Logger().Info("info detail")
+			enriched.Logger().Debug("debug pkg")
+			enriched.Logger().Info("info pkg")
+			ctx.Logger().Debug("debug plain")
+			ctx.Logger().Info("info plain")
+
+			fmt.Printf("\n" + buf.String())
+			Expect("\n" + buf.String()).To(Equal(`
+V[4] test:detail debug detail
+V[3] test:detail info detail
+V[4] test debug pkg
+V[3] test info pkg
+V[3] info plain
+`))
+		})
+
 	})
 
 	Context("nested contexts", func() {

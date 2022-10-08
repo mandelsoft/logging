@@ -157,6 +157,9 @@ type Context interface {
 	ResetRules()
 	AddRulesTo(ctx Context)
 
+	// WithContext provides a new logging Context enriched by the given standard
+	// message context
+	WithContext(messageContext ...MessageContext) Context
 	// Logger return the effective logger for the given message context.
 	Logger(...MessageContext) Logger
 	// V returns the effective logr.Logger for the given message context with

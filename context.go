@@ -40,8 +40,9 @@ type context struct {
 
 	defaultLogger Logger
 
-	effLevel int
-	effSink  logr.LogSink
+	messageContext []MessageContext
+	effLevel       int
+	effSink        logr.LogSink
 }
 
 var _ Context = (*context)(nil)
@@ -56,6 +57,10 @@ func New(logger logr.Logger) Context {
 }
 
 func NewWithBase(base Context, baselogger ...logr.Logger) Context {
+	return newWithBase(base, baselogger...)
+}
+
+func newWithBase(base Context, baselogger ...logr.Logger) *context {
 	ctx := &context{
 		base:  base,
 		level: -1,
@@ -203,10 +208,19 @@ func (c *context) ResetRules() {
 	c.rules = nil
 }
 
+func (c *context) WithContext(messageContext ...MessageContext) Context {
+	ctx := newWithBase(c)
+	ctx.messageContext = append(c.messageContext[:len(c.messageContext):len(c.messageContext)], messageContext...)
+	return ctx
+}
+
 func (c *context) Logger(messageContext ...MessageContext) Logger {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
+	if len(c.messageContext) > 0 {
+		messageContext = append(c.messageContext, messageContext...)
+	}
 	l := c.evaluate(c.GetSink, messageContext...)
 	if l != nil {
 		return l
