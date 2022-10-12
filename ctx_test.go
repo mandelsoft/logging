@@ -60,6 +60,22 @@ ERROR <nil> error
 `))
 	})
 
+	It("just default logs with package", func() {
+		ctx.Logger(pkg).Trace("trace")
+		ctx.Logger(pkg).Debug("debug")
+		ctx.Logger(pkg).Info("info")
+		ctx.Logger(pkg).Warn("warn")
+		ctx.Logger(pkg).Error("error")
+
+		fmt.Printf("%s\n", buf.String())
+
+		Expect("\n" + buf.String()).To(Equal(`
+V[3] github.com/mandelsoft/logging_test info
+V[2] github.com/mandelsoft/logging_test warn
+ERROR <nil> github.com/mandelsoft/logging_test error
+`))
+	})
+
 	It("just logs", func() {
 		ctx.SetDefaultLevel(9)
 		ctx.Logger().Trace("trace")

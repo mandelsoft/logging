@@ -222,10 +222,15 @@ func (c *context) Logger(messageContext ...MessageContext) Logger {
 		messageContext = append(c.messageContext, messageContext...)
 	}
 	l := c.evaluate(c.GetSink, messageContext...)
-	if l != nil {
-		return l
+	if l == nil {
+		l = c.defaultLogger
 	}
-	return c.defaultLogger
+	for _, c := range messageContext {
+		if a, ok := c.(Attacher); ok {
+			l = a.Attach(l)
+		}
+	}
+	return l
 }
 
 func (c *context) V(level int, messageContext ...MessageContext) logr.Logger {
@@ -243,11 +248,6 @@ func (c *context) evaluate(base SinkFunc, messageContext ...MessageContext) Logg
 	for _, rule := range c.rules {
 		l := rule.Match(base, messageContext...)
 		if l != nil {
-			for _, c := range messageContext {
-				if a, ok := c.(Attacher); ok {
-					l = a.Attach(l)
-				}
-			}
 			return l
 		}
 	}
