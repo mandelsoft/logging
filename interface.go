@@ -84,6 +84,7 @@ func LevelName(l int) string {
 }
 
 type Logger interface {
+	LogError(err error, msg string, keypairs ...interface{})
 	Error(msg string, keypairs ...interface{})
 	Warn(msg string, keypairs ...interface{})
 	Info(msg string, keypairs ...interface{})
