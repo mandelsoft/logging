@@ -18,7 +18,28 @@
 
 package logging
 
-var defaultContext = &ContextReference{NewDefault()}
+import (
+	"sync/atomic"
+)
+
+var defaultContext *ContextReference
+var seq atomic.Value
+
+type ContextId int64
+
+func init() {
+	seq.Store(ContextId(0))
+	defaultContext = &ContextReference{NewDefault()}
+}
+
+func getId() ContextId {
+	for {
+		o := seq.Load().(ContextId)
+		if seq.CompareAndSwap(o, o+1) {
+			return o + 1
+		}
+	}
+}
 
 // SetDefaultContext sets the default context.
 // It changes all usages based on the result of

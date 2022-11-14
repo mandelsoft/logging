@@ -22,13 +22,12 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/mandelsoft/logging/logrusr"
 	"github.com/sirupsen/logrus"
 )
 
 type context struct {
-	id          uuid.UUID
+	id          ContextId
 	lock        sync.RWMutex
 	base        Context
 	updateState *UpdateState
@@ -64,7 +63,7 @@ func newWithBase(base Context, baselogger ...logr.Logger) *context {
 	ctx := &context{
 		base:  base,
 		level: -1,
-		id:    uuid.New(),
+		id:    getId(),
 	}
 
 	if base == nil {
@@ -216,7 +215,7 @@ func (c *context) ResetRules() {
 
 func (c *context) WithContext(messageContext ...MessageContext) Context {
 	ctx := newWithBase(c)
-	ctx.messageContext = append(c.messageContext[:len(c.messageContext):len(c.messageContext)], messageContext...)
+	ctx.messageContext = append(ctx.messageContext, messageContext...)
 	return ctx
 }
 
