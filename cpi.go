@@ -28,6 +28,10 @@ type ContextSupport interface {
 	// GetBaseContext returns the base context for nested logging contexts.
 	GetBaseContext() Context
 
-	// GetWatermark return the actual config level
+	// GetWatermark returns the actual config level.
 	GetWatermark() int64
+
+	// GetMessageContext returns the configured standard message context
+	// shared for all created Loggers.
+	GetMessageContext() []MessageContext
 }

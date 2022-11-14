@@ -454,6 +454,30 @@ ERROR <nil> error
 			Expect(buf.String()).To(Equal(""))
 		})
 	})
+
+	Context("deriving standard message context", func() {
+		It("inherits context", func() {
+			realm := logging.NewRealm("test")
+			enriched := ctx.WithContext(realm)
+
+			eff := logging.NewWithBase(enriched)
+
+			eff.Logger().Error("with realm")
+			Expect(buf.String()).To(Equal("ERROR <nil> test with realm\n"))
+		})
+
+		It("extended message context", func() {
+			realm := logging.NewRealm("test")
+			enriched := ctx.WithContext(realm)
+
+			eff := logging.NewWithBase(enriched)
+
+			ext := logging.NewRealm("extended")
+
+			eff.Logger(ext).Error("with realm")
+			Expect(buf.String()).To(Equal("ERROR <nil> test:extended with realm\n"))
+		})
+	})
 })
 
 type X struct{}

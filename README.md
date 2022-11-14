@@ -250,7 +250,7 @@ and message contexts:
 
 - `Tag`(*string*) Just some tag for a log request.
 
-  Used as message context, the tag name is added to the logger name for
+  Used as message context, the tag name is not added to the logger name for
   the log request.
 
 - `Attribute`(*string,interface{}*) the name of an arbitrary attribute with some

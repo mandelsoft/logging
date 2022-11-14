@@ -71,7 +71,9 @@ func newWithBase(base Context, baselogger ...logr.Logger) *context {
 		ctx.updateState = &UpdateState{}
 		ctx.level = InfoLevel
 	} else {
-		ctx.updateState = base.Tree().UpdateState()
+		internal := base.Tree()
+		ctx.updateState = internal.UpdateState()
+		ctx.messageContext = internal.GetMessageContext()
 	}
 	ctx.updater = NewUpdater(ctx.updateState)
 
@@ -90,6 +92,10 @@ func newWithBase(base Context, baselogger ...logr.Logger) *context {
 
 func (c *context) Tree() ContextSupport {
 	return c
+}
+
+func (c *context) GetMessageContext() []MessageContext {
+	return append(c.messageContext[:0:0], c.messageContext...)
 }
 
 func (c *context) UpdateState() *UpdateState {
