@@ -97,7 +97,7 @@ func (l *logrusr) Enabled(level int) bool {
 	// logrus.InfoLevel has value 4 so if the level on the logger is set to 0 we
 	// should only be seen as enabled if the logrus logger has a severity of
 	// info or higher.
-	return l.logger.Logger.IsLevelEnabled(logrus.Level(level + minlevel))
+	return l.logger.Logger.IsLevelEnabled(logrus.Level(level + minlevel - 1))
 }
 
 // Info logs info messages if the logger is enabled, that is if the level on the
@@ -110,7 +110,7 @@ func (l *logrusr) Info(level int, msg string, keysAndValues ...interface{}) {
 
 	log.
 		WithFields(listToLogrusFields(l.defaultFormatter, keysAndValues...)).
-		Log(logrus.Level(level+minlevel), msg)
+		Log(logrus.Level(level+minlevel-1), msg)
 }
 
 // Error logs error messages. Since the log will be written with `Error` level
