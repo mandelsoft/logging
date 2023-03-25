@@ -115,6 +115,16 @@ type Rule interface {
 	Match(SinkFunc, ...MessageContext) Logger
 }
 
+// UpdatableRule is the optional interface for a rule
+// which might be replaced by a new one.
+// If a rule decides to get superfluous, when
+// adding the given rule to a ruleset is may
+// return true.
+type UpdatableRule interface {
+	Rule
+	MatchRule(Rule) bool
+}
+
 // ContextProvider is able to provide access to a logging context.
 type ContextProvider interface {
 	LoggingContext() Context
@@ -174,6 +184,19 @@ type Context interface {
 	// Tree provides an interface for the context intended for
 	// context implementations to work together in a context tree.
 	Tree() ContextSupport
+}
+
+// LoggingContext returns a default logging context for an
+// arbitrary object. If the object supports the LoggingProvider
+// interface, it is used to determine the context. If not,
+// the default logging context is returned.
+func LoggingContext(p interface{}) Context {
+	if p != nil {
+		if cp, ok := p.(ContextProvider); ok {
+			return cp.LoggingContext()
+		}
+	}
+	return DefaultContext()
 }
 
 // Attacher is an optional interface, which can be implemented by a dedicated

@@ -25,8 +25,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/mandelsoft/logging"
 	"github.com/tonglil/buflogr"
+
+	"github.com/mandelsoft/logging"
 )
 
 var pkg = logging.Package()
@@ -416,13 +417,15 @@ V[4] debug after
 
 		Context("update nested contexts", func() {
 			It("plain", func() {
-				Expect(nested.Tree().GetWatermark()).To((Equal(int64(0))))
+				Expect(nested.Tree().GetSeenWatermark()).To((Equal(int64(0))))
+				Expect(nested.Tree().GetSeenWatermark()).To(Equal(nested.Tree().GetWatermark()))
 			})
 
 			It("plain", func() {
 				ctx.SetDefaultLevel(9)
 				Expect(nested.GetDefaultLevel()).To((Equal(9)))
-				Expect(nested.Tree().GetWatermark()).To((Equal(int64(1))))
+				Expect(nested.Tree().GetSeenWatermark()).To((Equal(int64(1))))
+				Expect(nested.Tree().GetSeenWatermark()).To(Equal(nested.Tree().GetWatermark()))
 			})
 
 		})

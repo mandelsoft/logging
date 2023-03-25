@@ -31,6 +31,9 @@ type ContextSupport interface {
 	// GetWatermark returns the actual config level.
 	GetWatermark() int64
 
+	// GetLocalWatermark returns the actually incorporated config level.
+	GetSeenWatermark() int64
+
 	// GetMessageContext returns the configured standard message context
 	// shared for all created Loggers.
 	GetMessageContext() []MessageContext

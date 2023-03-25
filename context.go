@@ -22,8 +22,9 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/mandelsoft/logging/logrusr"
 	"github.com/sirupsen/logrus"
+
+	"github.com/mandelsoft/logging/logrusr"
 )
 
 type context struct {
@@ -102,6 +103,10 @@ func (c *context) UpdateState() *UpdateState {
 }
 
 func (c *context) GetWatermark() int64 {
+	return c.updater.state.Level()
+}
+
+func (c *context) GetSeenWatermark() int64 {
 	return c.updater.Watermark()
 }
 
@@ -190,9 +195,19 @@ func (c *context) AddRule(rules ...Rule) {
 
 	for _, rule := range rules {
 		if rule != nil {
+			i := 0
+			for i < len(c.rules) {
+				f := c.rules[i]
+				if upd, ok := f.(UpdatableRule); ok && upd.MatchRule(rule) {
+					c.rules = append(c.rules[:i], rules[i+1:]...)
+				} else {
+					i++
+				}
+			}
 			c.rules = append(append(c.rules[:0:0], rule), c.rules...)
 		}
 	}
+	c.updateState.Modify()
 }
 
 func (c *context) AddRulesTo(ctx Context) {
