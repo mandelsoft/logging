@@ -417,15 +417,15 @@ V[4] debug after
 
 		Context("update nested contexts", func() {
 			It("plain", func() {
-				Expect(nested.Tree().GetSeenWatermark()).To((Equal(int64(0))))
-				Expect(nested.Tree().GetSeenWatermark()).To(Equal(nested.Tree().GetWatermark()))
+				Expect(nested.Tree().Updater().SeenWatermark()).To((Equal(int64(0))))
+				Expect(nested.Tree().Updater().SeenWatermark()).To(Equal(nested.Tree().Updater().Watermark()))
 			})
 
 			It("plain", func() {
 				ctx.SetDefaultLevel(9)
 				Expect(nested.GetDefaultLevel()).To((Equal(9)))
-				Expect(nested.Tree().GetSeenWatermark()).To((Equal(int64(1))))
-				Expect(nested.Tree().GetSeenWatermark()).To(Equal(nested.Tree().GetWatermark()))
+				Expect(nested.Tree().Updater().SeenWatermark()).To((Equal(int64(1))))
+				Expect(nested.Tree().Updater().SeenWatermark()).To(Equal(nested.Tree().Updater().Watermark()))
 			})
 
 		})

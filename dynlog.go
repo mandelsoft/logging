@@ -81,7 +81,7 @@ func (d *dynamicLogger) update() Logger {
 	// with intermediate config requests, but this glitch does not hamper,
 	// because the watermark assures update with the next call,
 	// so no configs are finally lost.
-	watermark := d.ctx.Tree().GetWatermark()
+	watermark := d.ctx.Tree().Updater().Watermark()
 	if d.logger == nil || watermark > d.watermark {
 		// update logger and incorporate local modifications
 		d.logger = d.ctx.Logger(d.messageContext...)

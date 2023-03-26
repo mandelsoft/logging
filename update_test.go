@@ -44,6 +44,71 @@ var _ = Describe("context test", func() {
 		ctx = logging.New(def)
 	})
 
+	Context("context update handling", func() {
+		It("root context", func() {
+			ctx.SetDefaultLevel(logging.DebugLevel)
+			ctx.SetBaseLogger(buflogr.NewWithBuffer(&buf))
+			u := ctx.Tree().Updater()
+			Expect(u.Watermark()).To(Equal(int64(2)))
+			Expect(u.SeenWatermark()).To(Equal(u.Watermark()))
+		})
+
+		It("nested context", func() {
+			nctx := logging.NewWithBase(ctx)
+			ctx.SetDefaultLevel(logging.DebugLevel)
+			ctx.SetBaseLogger(buflogr.NewWithBuffer(&buf))
+			ur := ctx.Tree().Updater()
+			Expect(ur.Watermark()).To(Equal(int64(2)))
+			Expect(ur.SeenWatermark()).To(Equal(ur.Watermark()))
+
+			// modify leaf
+			nctx.Logger().Info("test")
+			ul := nctx.Tree().Updater()
+			Expect(nctx.GetDefaultLevel()).To(Equal(logging.DebugLevel))
+			Expect(ul.Watermark()).To(Equal(int64(2)))
+			Expect(ul.SeenWatermark()).To(Equal(ul.Watermark()))
+
+			// modify root
+			nctx.SetDefaultLevel(logging.TraceLevel)
+			nctx.Logger().Info("test")
+			Expect(ur.Watermark()).To(Equal(int64(2)))
+			Expect(ur.SeenWatermark()).To(Equal(ur.Watermark()))
+			Expect(nctx.GetDefaultLevel()).To(Equal(logging.TraceLevel))
+			Expect(ul.Watermark()).To(Equal(int64(3)))
+			Expect(ul.SeenWatermark()).To(Equal(ur.Watermark()))
+
+			// modify leaf - root
+			nctx.SetDefaultLevel(logging.TraceLevel)
+			Expect(ul.Watermark()).To(Equal(int64(4)))
+			Expect(ur.Watermark()).To(Equal(int64(2)))
+			ctx.SetDefaultLevel(logging.InfoLevel)
+			Expect(ul.Watermark()).To(Equal(int64(5)))
+			Expect(ul.SeenWatermark()).To(Equal(int64(2))) // not yet updated
+			nctx.Logger().Info("test")
+			Expect(nctx.GetDefaultLevel()).To(Equal(logging.TraceLevel))
+			Expect(ul.Watermark()).To(Equal(int64(5)))
+			Expect(ul.SeenWatermark()).To(Equal(ur.Watermark()))
+			Expect(ur.Watermark()).To(Equal(int64(5)))
+			Expect(ur.SeenWatermark()).To(Equal(ur.Watermark()))
+
+			// modify root - leaf
+			ctx.SetDefaultLevel(logging.InfoLevel)
+			Expect(ul.Watermark()).To(Equal(int64(6)))
+			Expect(ul.SeenWatermark()).To(Equal(int64(5)))
+			Expect(ur.Watermark()).To(Equal(int64(6)))
+			Expect(ur.SeenWatermark()).To(Equal(int64(6)))
+			nctx.SetDefaultLevel(logging.TraceLevel)
+			Expect(ul.Watermark()).To(Equal(int64(7)))
+			Expect(ul.SeenWatermark()).To(Equal(int64(5))) // not yet updated
+			nctx.Logger().Info("test")
+			Expect(nctx.GetDefaultLevel()).To(Equal(logging.TraceLevel))
+			Expect(ul.Watermark()).To(Equal(int64(7)))
+			Expect(ur.Watermark()).To(Equal(int64(6)))
+			Expect(ul.SeenWatermark()).To(Equal(ur.Watermark()))
+			Expect(ur.SeenWatermark()).To(Equal(ur.Watermark()))
+		})
+	})
+
 	Context("bound loggers", func() {
 		It("level update", func() {
 			logger := ctx.Logger()
