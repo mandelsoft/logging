@@ -30,10 +30,20 @@ type realm struct {
 
 var _ Realm = (*realm)(nil)
 
+// DefineRealm creates a tag and registers it together with a description.
+func DefineRealm(name string, desc string) Realm {
+	defs.DefineRealm(name, desc)
+	return NewRealm(name)
+}
+
+// NewRealm provides a new Realm object to be used as rule condition
+// or message context.
 func NewRealm(name string) Realm {
 	return &realm{name: name}
 }
 
+// NewRealmPrefix provides a new Realm object to be used as rule condition
+// matching a realm prefix.
 func NewRealmPrefix(name string) RealmPrefix {
 	return &realm{name: name, prefix: true}
 }
