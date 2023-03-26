@@ -195,13 +195,15 @@ func (c *context) AddRule(rules ...Rule) {
 
 	for _, rule := range rules {
 		if rule != nil {
-			i := 0
-			for i < len(c.rules) {
-				f := c.rules[i]
-				if upd, ok := f.(UpdatableRule); ok && upd.MatchRule(rule) {
-					c.rules = append(c.rules[:i], rules[i+1:]...)
-				} else {
-					i++
+			if upd, ok := rule.(UpdatableRule); ok {
+				i := 0
+				for i < len(c.rules) {
+					f := c.rules[i]
+					if upd.MatchRule(f) {
+						c.rules = append(c.rules[:i], c.rules[i+1:]...)
+					} else {
+						i++
+					}
 				}
 			}
 			c.rules = append(append(c.rules[:0:0], rule), c.rules...)

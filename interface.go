@@ -116,10 +116,11 @@ type Rule interface {
 }
 
 // UpdatableRule is the optional interface for a rule
-// which might be replaced by a new one.
-// If a rule decides to get superfluous, when
-// adding the given rule to a ruleset is may
-// return true.
+// which might replace an old one.
+// If a rule decides to supersede an old one when
+// adding to a ruleset is may return true.
+// Typically, a rule should only supersede rules
+// of its own type.
 type UpdatableRule interface {
 	Rule
 	MatchRule(Rule) bool
