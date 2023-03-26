@@ -24,26 +24,6 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// UnboundLogger is a logger, which is never bound to
-// the settings of a matching rule at the time of
-// its creation. It therefore always reflects the
-// state of the rule settings valid at the time
-// of logging calls. They are more expensive than regular
-// loggers can cean be created and configured once
-// and stored in long living variables.
-// When passing loggers down a dynamic call tree, to control
-// the logging here, only temporary bound loggers should be used
-// to improve performance.
-//
-// Such a logger can be reused for multiple independent call trees
-// without losing track to the config.
-// Regular loggers provided by a context keep their setting from the
-// matching rule valid during its creation.
-type UnboundLogger interface {
-	Logger
-	BoundLogger() Logger
-}
-
 type dynamicLogger struct {
 	lock           sync.Mutex
 	watermark      int64
@@ -58,7 +38,7 @@ type dynamicLogger struct {
 var _ Logger = (*dynamicLogger)(nil)
 var _ ContextProvider = (*dynamicLogger)(nil)
 
-// DynamicLogger returns a logger, which automatically adapts to rule
+// DynamicLogger returns an unbound logger, which automatically adapts to rule
 // configuration changes applied to its logging context.
 //
 // Such a logger can be reused for multiple independent call trees

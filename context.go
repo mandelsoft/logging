@@ -220,6 +220,7 @@ func (c *context) ResetRules() {
 	defer c.lock.Unlock()
 
 	c.rules = nil
+	c.updater.Modify()
 }
 
 func (c *context) WithContext(messageContext ...MessageContext) Context {
