@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/mandelsoft/logging"
+	"github.com/mandelsoft/logging/scheme"
 )
 
 func init() {
@@ -35,9 +36,12 @@ func init() {
 	RegisterCondition("attribute", &Attribute{})
 }
 
+// Condition is the representation of a typed condition.
+type Condition = scheme.Element[logging.Condition]
+
 ////////////////////////////////////////////////////////////////////////////////
 
-type And []json.RawMessage
+type And []Condition
 
 func (e And) Create(r Registry) (logging.Condition, error) {
 	conditions, err := ParseConditions(r, e)

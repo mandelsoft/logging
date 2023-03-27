@@ -19,18 +19,20 @@
 package config
 
 import (
-	"encoding/json"
-
 	"github.com/mandelsoft/logging"
+	"github.com/mandelsoft/logging/scheme"
 )
 
 func init() {
 	RegisterRule("rule", &ConditionalRule{})
 }
 
+// Rule is the representation of a typed rule.
+type Rule = scheme.Element[logging.Rule]
+
 type ConditionalRule struct {
-	Level      string            `json:"level"`
-	Conditions []json.RawMessage `json:"conditions"`
+	Level      string      `json:"level"`
+	Conditions []Condition `json:"conditions"`
 }
 
 func (r *ConditionalRule) Create(reg Registry) (logging.Rule, error) {

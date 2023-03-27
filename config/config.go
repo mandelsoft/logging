@@ -19,15 +19,14 @@
 package config
 
 import (
-	"encoding/json"
+	"sigs.k8s.io/yaml"
 
 	"github.com/mandelsoft/logging"
-	"sigs.k8s.io/yaml"
 )
 
 type Config struct {
 	DefaultLevel string `json:"defaultLevel,omitempty"`
-	Rules        []json.RawMessage
+	Rules        []Rule
 }
 
 func (c *Config) UnmarshalFrom(data []byte) error {
