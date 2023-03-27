@@ -25,25 +25,32 @@ import (
 )
 
 type Element[T any] struct {
-	Type string
-	Spec T
-	Raw  []byte
+	typ  string
+	spec T
+	raw  []byte
 }
 
 var _ json.Marshaler = (*Element[any])(nil)
 
 var _ json.Unmarshaler = (*Element[any])(nil)
 
+func NewElement[T any](typ string, spec T) Element[T] {
+	return Element[T]{
+		typ:  typ,
+		spec: spec,
+	}
+}
+
 func (e Element[T]) MarshalJSON() ([]byte, error) {
-	if !reflect.ValueOf(e.Spec).IsZero() {
-		data, err := json.Marshal(e.Spec)
+	if reflect.ValueOf(e.spec).IsValid() && !reflect.ValueOf(e.spec).IsZero() {
+		data, err := json.Marshal(e.spec)
 		if err != nil {
 			return nil, err
 		}
-		e.Raw = data
+		e.raw = data
 	}
 	v := map[string]json.RawMessage{
-		e.Type: e.Raw,
+		e.typ: e.raw,
 	}
 	return json.Marshal(v)
 }
@@ -59,14 +66,14 @@ func (e *Element[T]) UnmarshalJSON(bytes []byte) error {
 	if len(v) == 0 {
 		return fmt.Errorf("element type missing")
 	}
-	e.Spec = zero
-	e.Raw = nil
+	e.spec = zero
+	e.raw = nil
 	for k, c := range v {
-		if e.Raw != nil {
+		if e.raw != nil {
 			return fmt.Errorf("logging config element may have only name entry")
 		}
-		e.Raw = c
-		e.Type = k
+		e.raw = c
+		e.typ = k
 	}
 	return nil
 }

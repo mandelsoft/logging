@@ -26,11 +26,19 @@ import (
 
 type Config struct {
 	DefaultLevel string `json:"defaultLevel,omitempty"`
-	Rules        []Rule
+	Rules        []Rule `json:"rules,omitempty"`
 }
 
 func (c *Config) UnmarshalFrom(data []byte) error {
 	return yaml.Unmarshal(data, c)
+}
+
+func EvaluateFromData(data []byte) (*Config, error) {
+	return _registry.EvaluateFromData(data)
+}
+
+func Evaluate(cfg *Config) error {
+	return _registry.Evaluate(cfg)
 }
 
 func ConfigureWithData(ctx logging.Context, data []byte) error {

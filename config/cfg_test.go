@@ -20,12 +20,15 @@ package config_test
 
 import (
 	"bytes"
+	"fmt"
 
-	"github.com/mandelsoft/logging"
-	"github.com/mandelsoft/logging/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/tonglil/buflogr"
+	"sigs.k8s.io/yaml"
+
+	"github.com/mandelsoft/logging"
+	"github.com/mandelsoft/logging/config"
 )
 
 type Test struct {
@@ -249,6 +252,55 @@ rules:
 			Expect("\n" + buf.String()).To(Equal(`
 V[5] debug test testvalue
 `))
+		})
+	})
+
+	Context("config composition", func() {
+		It("composes config", func() {
+			cfg := &config.Config{
+				DefaultLevel: "debug",
+				Rules: []config.Rule{
+					config.ConditionalRule("trace",
+						config.Tag("tag"),
+						config.Realm("realm"),
+						config.RealmPrefix("realmprefix"),
+						config.Attribute("attr", "string"),
+						config.Not(config.And(config.Or(config.Tag("tag")), config.Realm("realm"))),
+					),
+				},
+			}
+
+			data, err := yaml.Marshal(cfg)
+			Expect(err).To(Succeed())
+			fmt.Printf("\n%s\n", string(data))
+			Expect("\n" + string(data)).To(Equal(`
+defaultLevel: debug
+rules:
+- rule:
+    conditions:
+    - tag: tag
+    - realm: realm
+    - realmprefix: realmprefix
+    - attribute:
+        name: attr
+        value:
+          value: string
+    - not:
+        and:
+        - or:
+          - tag: tag
+        - realm: realm
+    level: trace
+`))
+
+			ncfg, err := config.EvaluateFromData(data)
+			Expect(err).To(Succeed())
+			Expect(ncfg).To(Equal(cfg))
+
+			err = config.Configure(logging.NewWithBase(nil), cfg)
+			Expect(err).To(Succeed())
+			err = config.ConfigureWithData(logging.NewWithBase(nil), data)
+			Expect(err).To(Succeed())
 		})
 	})
 })

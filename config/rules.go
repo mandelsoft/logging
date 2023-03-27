@@ -24,18 +24,23 @@ import (
 )
 
 func init() {
-	RegisterRule("rule", &ConditionalRule{})
+	RegisterRule("rule", &ConditionalRuleType{})
 }
 
-// Rule is the representation of a typed rule.
-type Rule = scheme.Element[logging.Rule]
+func newRule(typ string, v RuleType) Rule {
+	return scheme.NewElement(typ, v)
+}
 
-type ConditionalRule struct {
+type ConditionalRuleType struct {
 	Level      string      `json:"level"`
 	Conditions []Condition `json:"conditions"`
 }
 
-func (r *ConditionalRule) Create(reg Registry) (logging.Rule, error) {
+func ConditionalRule(level string, conds ...Condition) Rule {
+	return newRule("rule", &ConditionalRuleType{level, conds})
+}
+
+func (r *ConditionalRuleType) Create(reg Registry) (logging.Rule, error) {
 	l, err := logging.ParseLevel(r.Level)
 	if err != nil {
 		return nil, err

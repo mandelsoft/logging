@@ -68,7 +68,7 @@ func (s *Scheme[T, F]) Register(name string, proto Factory[T, F]) {
 
 func (s *Scheme[T, F]) Get(data []byte) (T, error) {
 	var zero T
-	var e Element[T]
+	var e Element[Factory[T, F]]
 	err := yaml.Unmarshal(data, &e)
 	if err != nil {
 		return zero, err
@@ -76,24 +76,30 @@ func (s *Scheme[T, F]) Get(data []byte) (T, error) {
 	return s.GetFromElement(&e)
 }
 
-func (s *Scheme[T, F]) GetFromElement(d *Element[T]) (T, error) {
+func (s *Scheme[T, F]) GetFromElement(d *Element[Factory[T, F]]) (T, error) {
 	var zero T
 
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	t := s.prototypes[d.Type]
+	t := s.prototypes[d.typ]
 	if t == nil {
-		return s.none, fmt.Errorf("unknown element type %q", d.Type)
+		return s.none, fmt.Errorf("unknown element type %q", d.typ)
 	}
 	f := reflect.New(t).Interface().(Factory[T, F])
-	err := yaml.Unmarshal(d.Raw, f)
-	if err != nil {
-		return s.none, fmt.Errorf("cannot unmarshal type %q: %w", d.Type, err)
+	if d.raw != nil {
+		err := yaml.Unmarshal(d.raw, f)
+		if err != nil {
+			return s.none, fmt.Errorf("cannot unmarshal type %q: %w", d.typ, err)
+		}
+	} else {
+		f = d.spec
 	}
-	d.Spec, err = f.Create(s.factoryContext)
+	e, err := f.Create(s.factoryContext)
 	if err != nil {
 		return zero, err
 	}
-	return d.Spec, nil
+	d.spec = f
+	d.raw = nil
+	return e, nil
 }
