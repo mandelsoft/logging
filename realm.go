@@ -58,10 +58,10 @@ func (r *realm) Match(messageContext ...MessageContext) bool {
 }
 
 func (r *realm) check(name string) bool {
-	if !r.IsPrefix() {
-		return name == r.name
+	if name == r.name {
+		return true
 	}
-	return strings.HasPrefix(name, r.name+"/")
+	return r.IsPrefix() && strings.HasPrefix(name, r.name+"/")
 }
 
 func (r *realm) Name() string {
