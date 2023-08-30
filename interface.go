@@ -270,6 +270,8 @@ type Realm interface {
 	Attacher
 
 	Name() string
+
+	IsRelative() bool
 }
 
 // RealmPrefix is used as logging condition to

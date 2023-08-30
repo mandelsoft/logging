@@ -225,7 +225,7 @@ func (c *context) ResetRules() {
 
 func (c *context) WithContext(messageContext ...MessageContext) Context {
 	ctx := newWithBase(c)
-	ctx.messageContext = append(ctx.messageContext, messageContext...)
+	ctx.messageContext = JoinMessageContext(ctx.messageContext, messageContext...)
 	return ctx
 }
 
@@ -234,7 +234,7 @@ func (c *context) Logger(messageContext ...MessageContext) Logger {
 	defer c.lock.RUnlock()
 
 	if len(c.messageContext) > 0 {
-		messageContext = append(c.messageContext, messageContext...)
+		messageContext = JoinMessageContext(c.messageContext, messageContext...)
 	}
 	l := c.evaluate(c.GetSink, messageContext...)
 	if l == nil {
@@ -290,4 +290,19 @@ func getLogrLevel(l logr.Logger) int {
 func shifted(logger logr.Logger) logr.LogSink {
 	level := getLogrLevel(logger)
 	return WrapSink(level+9, level, logger.GetSink())
+}
+
+func JoinMessageContext(base []MessageContext, list ...MessageContext) []MessageContext {
+	result := append(append(make([]MessageContext, 0, len(base)+len(list)), base...), list...)
+	found := false
+	for i := len(result) - 1; i >= 0; i-- {
+		if r, ok := result[i].(*realm); ok {
+			if found {
+				result = append(result[:i], result[i+1:]...)
+			} else {
+				found = r.IsReplacing()
+			}
+		}
+	}
+	return result
 }

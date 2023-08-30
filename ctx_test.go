@@ -481,6 +481,36 @@ ERROR <nil> error
 			Expect(buf.String()).To(Equal("ERROR <nil> test:extended with realm\n"))
 		})
 	})
+
+	Context("realm handling", func() {
+		It("adds realm to logger name", func() {
+			enriched := ctx.WithContext(logging.NewRealm("test")).WithContext(logging.NewRealm("nested"))
+			enriched.Logger().Error("with realm")
+			Expect(buf.String()).To(Equal("ERROR <nil> test:nested with realm\n"))
+
+			buf.Reset()
+			enriched.Logger(logging.NewRealm("sub")).Error("with realm")
+			Expect(buf.String()).To(Equal("ERROR <nil> test:nested:sub with realm\n"))
+
+			buf.Reset()
+			enriched.Logger(logging.NewRealm("absolute", true)).Error("with realm")
+			Expect(buf.String()).To(Equal("ERROR <nil> absolute with realm\n"))
+		})
+
+		It("adds realm to logger name with sub context using absolute realm", func() {
+			enriched := ctx.WithContext(logging.NewRealm("test")).WithContext(logging.NewRealm("other", true))
+			enriched.Logger().Error("with realm")
+			Expect(buf.String()).To(Equal("ERROR <nil> other with realm\n"))
+
+			buf.Reset()
+			enriched.Logger(logging.NewRealm("sub")).Error("with realm")
+			Expect(buf.String()).To(Equal("ERROR <nil> other:sub with realm\n"))
+
+			buf.Reset()
+			enriched.Logger(logging.NewRealm("absolute", true)).Error("with realm")
+			Expect(buf.String()).To(Equal("ERROR <nil> absolute with realm\n"))
+		})
+	})
 })
 
 type X struct{}

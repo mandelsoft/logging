@@ -24,8 +24,9 @@ import (
 )
 
 type realm struct {
-	name   string
-	prefix bool
+	name     string
+	prefix   bool
+	absolute bool
 }
 
 var _ Realm = (*realm)(nil)
@@ -33,13 +34,26 @@ var _ Realm = (*realm)(nil)
 // DefineRealm creates a tag and registers it together with a description.
 func DefineRealm(name string, desc string) Realm {
 	defs.DefineRealm(name, desc)
-	return NewRealm(name)
+	return NewAbsoluteRealm(name)
 }
 
 // NewRealm provides a new Realm object to be used as rule condition
 // or message context.
-func NewRealm(name string) Realm {
-	return &realm{name: name}
+func NewRealm(name string, absolute ...bool) Realm {
+	r := false
+	for _, f := range absolute {
+		if f {
+			r = true
+			break
+		}
+	}
+	return &realm{name: name, absolute: r}
+}
+
+// NewAbsoluteRealm provides a new Realm object to be used as rule condition
+// or message context replacing other realms earlier in a message context.
+func NewAbsoluteRealm(name string) Realm {
+	return &realm{name: name, absolute: true}
 }
 
 // NewRealmPrefix provides a new Realm object to be used as rule condition
@@ -72,10 +86,22 @@ func (r *realm) IsPrefix() bool {
 	return r.prefix
 }
 
+func (r *realm) IsRelative() bool {
+	return !r.absolute
+}
+
+func (r *realm) IsReplacing() bool {
+	if !r.absolute || r.prefix {
+		return false
+	}
+	return true
+}
+
 func (r *realm) Attach(l Logger) Logger {
 	if r.IsPrefix() {
 		return l
 	}
+	// what a pitty, he logr API does not allow to SET logger names.
 	return l.WithName(r.name)
 }
 
@@ -95,5 +121,5 @@ func Package() Realm {
 		lastSlash = 0
 	}
 	firstDot := strings.IndexByte(funcName[lastSlash:], '.') + lastSlash
-	return NewRealm(funcName[:firstDot])
+	return NewAbsoluteRealm(funcName[:firstDot])
 }
