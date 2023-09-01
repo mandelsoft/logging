@@ -16,31 +16,16 @@
  *  limitations under the License.
  */
 
-package logging
+package logrusfmt_test
 
-type tag string
+import (
+	"testing"
 
-// DefineTag creates a tag and registers it together with a description.
-func DefineTag(name string, desc string) Tag {
-	defs.DefineTag(name, desc)
-	return NewTag(name)
-}
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
 
-// NewTag provides a new Tag object to be used as rule condition
-// or message context.
-func NewTag(name string) Tag {
-	return tag(name)
-}
-
-func (r tag) Match(messageContext ...MessageContext) bool {
-	for _, c := range messageContext {
-		if e, ok := c.(Tag); ok && e.Name() == string(r) {
-			return true
-		}
-	}
-	return false
-}
-
-func (r tag) Name() string {
-	return string(r)
+func TestConfig(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Logrus Formatter Suite")
 }

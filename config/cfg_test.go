@@ -24,6 +24,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/tonglil/buflogr"
 	"sigs.k8s.io/yaml"
 
@@ -221,7 +222,7 @@ rules:
 			ctx.Logger(logging.NewRealm("test")).Debug("debug")
 
 			Expect("\n" + buf.String()).To(Equal(`
-V[4] test debug
+V[4] debug realm test
 `))
 		})
 

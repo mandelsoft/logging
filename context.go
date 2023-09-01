@@ -293,16 +293,5 @@ func shifted(logger logr.Logger) logr.LogSink {
 }
 
 func JoinMessageContext(base []MessageContext, list ...MessageContext) []MessageContext {
-	result := append(append(make([]MessageContext, 0, len(base)+len(list)), base...), list...)
-	found := false
-	for i := len(result) - 1; i >= 0; i-- {
-		if r, ok := result[i].(*realm); ok {
-			if found {
-				result = append(result[:i], result[i+1:]...)
-			} else {
-				found = r.IsReplacing()
-			}
-		}
-	}
-	return result
+	return append(append(make([]MessageContext, 0, len(base)+len(list)), base...), list...)
 }

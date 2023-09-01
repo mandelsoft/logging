@@ -23,91 +23,69 @@ import (
 	"strings"
 )
 
-type realm struct {
-	name     string
-	prefix   bool
-	absolute bool
-}
-
-var _ Realm = (*realm)(nil)
+type realm string
 
 // DefineRealm creates a tag and registers it together with a description.
 func DefineRealm(name string, desc string) Realm {
 	defs.DefineRealm(name, desc)
-	return NewAbsoluteRealm(name)
+	return NewRealm(name)
 }
 
 // NewRealm provides a new Realm object to be used as rule condition
 // or message context.
-func NewRealm(name string, absolute ...bool) Realm {
-	r := false
-	for _, f := range absolute {
-		if f {
-			r = true
-			break
-		}
-	}
-	return &realm{name: name, absolute: r}
+func NewRealm(name string) Realm {
+	return realm(name)
 }
 
-// NewAbsoluteRealm provides a new Realm object to be used as rule condition
-// or message context replacing other realms earlier in a message context.
-func NewAbsoluteRealm(name string) Realm {
-	return &realm{name: name, absolute: true}
+func (r realm) Name() string {
+	return string(r)
 }
 
-// NewRealmPrefix provides a new Realm object to be used as rule condition
+func (r realm) Match(messageContext ...MessageContext) bool {
+	return matchRealm(string(r), false, messageContext...)
+}
+
+func (r realm) Attach(l Logger) Logger {
+	return l.WithValues(FieldKeyRealm, string(r))
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+type realmprefix string
+
+// NewRealmPrefix provides a new RealmPrefix object to be used as rule condition
 // matching a realm prefix.
 func NewRealmPrefix(name string) RealmPrefix {
-	return &realm{name: name, prefix: true}
+	return realmprefix(name)
 }
 
-func (r *realm) Match(messageContext ...MessageContext) bool {
+func (r realmprefix) Name() string {
+	return string(r)
+}
+
+func (r realmprefix) Match(messageContext ...MessageContext) bool {
+	return matchRealm(string(r), true, messageContext...)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func matchRealm(r string, prefix bool, messageContext ...MessageContext) bool {
 	for _, c := range messageContext {
-		if e, ok := c.(Realm); ok && r.check(e.Name()) {
+		if e, ok := c.(Realm); ok && checkRealm(r, e.Name(), prefix) {
 			return true
 		}
 	}
 	return false
 }
 
-func (r *realm) check(name string) bool {
-	if name == r.name {
+func checkRealm(r, name string, prefix bool) bool {
+	if name == r {
 		return true
 	}
-	return r.IsPrefix() && strings.HasPrefix(name, r.name+"/")
+	return prefix && strings.HasPrefix(name, r+"/")
 }
 
-func (r *realm) Name() string {
-	return r.name
-}
-
-func (r *realm) IsPrefix() bool {
-	return r.prefix
-}
-
-func (r *realm) IsRelative() bool {
-	return !r.absolute
-}
-
-func (r *realm) IsReplacing() bool {
-	if !r.absolute || r.prefix {
-		return false
-	}
-	return true
-}
-
-func (r *realm) Attach(l Logger) Logger {
-	if r.IsPrefix() {
-		return l
-	}
-	// what a pitty, he logr API does not allow to SET logger names.
-	return l.WithName(r.name)
-}
-
-func (r *realm) String() string {
-	return r.name
-}
+////////////////////////////////////////////////////////////////////////////////
 
 func Package() Realm {
 	pc, _, _, ok := runtime.Caller(1)
@@ -121,5 +99,5 @@ func Package() Realm {
 		lastSlash = 0
 	}
 	firstDot := strings.IndexByte(funcName[lastSlash:], '.') + lastSlash
-	return NewAbsoluteRealm(funcName[:firstDot])
+	return NewRealm(funcName[:firstDot])
 }

@@ -134,7 +134,7 @@ V[4] debug
 			logger.Trace("trace")
 			fmt.Printf("%s\n", buf.String())
 			Expect("\n" + buf.String()).To(Equal(`
-V[4] realm debug
+V[4] debug realm realm
 `))
 			// do not use default level, but fixed rule level
 			buf.Reset()
@@ -177,7 +177,7 @@ V[4] debug
 				for _, n := range strings.Split(names, ":") {
 					logger = logger.WithName(n)
 				}
-				names = ":" + names
+				names = " " + names
 			}
 			logger = logger.WithValues(values...)
 			vstring := ""
@@ -189,7 +189,7 @@ V[4] debug
 			logger.Trace("trace")
 			fmt.Printf("%s\n", buf.String())
 			Expect("\n" + buf.String()).To(Equal(fmt.Sprintf(`
-V[4] realm%s debug%s
+V[4]%s debug realm realm%s
 `, names, vstring)))
 			// do not use default level, but fixed rule level
 			buf.Reset()
@@ -203,7 +203,7 @@ V[4] realm%s debug%s
 			buf.Reset()
 			logger.Trace("trace")
 			Expect("\n" + buf.String()).To(Equal(fmt.Sprintf(`
-V[5] realm%s trace%s
+V[5]%s trace realm realm%s
 `, names, vstring)))
 		},
 			Entry("without name", nil, nil),
