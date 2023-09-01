@@ -22,8 +22,7 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/sirupsen/logrus"
-
+	"github.com/mandelsoft/logging/logrusl/adapter"
 	"github.com/mandelsoft/logging/logrusr"
 )
 
@@ -79,8 +78,8 @@ func newWithBase(base Context, baselogger ...logr.Logger) *context {
 		ctx.setBaseLogger(baselogger[0])
 	}
 	if base == nil && len(baselogger) == 0 {
-		l := logrus.New()
-		l.SetLevel(9)
+		l := adapter.NewLogger()
+		l.Formatter = adapter.NewTextFmtFormatter()
 		ctx.setBaseLogger(logrusr.New(l))
 	}
 	ctx.defaultLogger = NewLogger(DynSink(ctx.GetDefaultLevel, 0, ctx.GetSink))

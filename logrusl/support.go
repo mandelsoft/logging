@@ -19,35 +19,14 @@
 package logrusl
 
 import (
-	"bytes"
 	"io"
 	"os"
 
 	"github.com/mandelsoft/logging"
-	"github.com/mandelsoft/logging/logrusfmt"
+	"github.com/mandelsoft/logging/logrusl/adapter"
 	"github.com/mandelsoft/logging/logrusr"
 	"github.com/sirupsen/logrus"
 )
-
-const FieldKeyRealm = logging.FieldKeyRealm
-
-var defaultFixedKeys = []string{
-	logrusfmt.FieldKeyTime,
-	logrusfmt.FieldKeyLevel,
-	logrusr.FieldKeyLogger,
-	FieldKeyRealm,
-	logrusfmt.FieldKeyMsg,
-}
-
-var defaultFieldFormatters = logrusfmt.FieldFormatters{
-	logrusfmt.FieldKeyTime:  logrusfmt.PlainValue,
-	logrusfmt.FieldKeyLevel: logrusfmt.LevelValue,
-	logrusr.FieldKeyLogger:  logrusfmt.PlainValue,
-	FieldKeyRealm:           logrusfmt.BracketValue,
-	logrusfmt.FieldKeyMsg:   logrusfmt.PlainValue,
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 // Settings is an composition environment to configure a
 // logrus.Logger or a logging.Context.
@@ -67,24 +46,24 @@ func (s Settings) WithFormatter(f logrus.Formatter) Settings {
 }
 
 func (s Settings) Human() Settings {
-	s.Formatter = NewTextFmtFormatter()
+	s.Formatter = adapter.NewTextFmtFormatter()
 	return s
 }
 
 func (s Settings) JSON() Settings {
-	s.Formatter = NewJSONFormatter()
+	s.Formatter = adapter.NewJSONFormatter()
 	return s
 }
 
 func (s Settings) NewLogrus() *logrus.Logger {
-	logger := newLogger()
+	logger := adapter.NewLogger()
 	logger.Out = s.Writer
 	if logger.Out == nil {
 		logger.Out = os.Stderr
 	}
 	logger.Formatter = s.Formatter
 	if logger.Formatter == nil {
-		logger.Formatter = NewTextFormatter()
+		logger.Formatter = adapter.NewTextFormatter()
 	}
 	return logger
 }
@@ -113,30 +92,4 @@ func Human() Settings {
 
 func JSON() Settings {
 	return Settings{}.JSON()
-}
-
-func newLogger(buf ...*bytes.Buffer) *logrus.Logger {
-	logger := logrus.New()
-	if len(buf) > 0 && buf[0] != nil {
-		logger.Out = buf[0]
-	}
-	logger.Level = 9
-	return logger
-}
-
-func NewTextFormatter() *logrusfmt.TextFormatter {
-	return &logrusfmt.TextFormatter{
-		FixedFields:     defaultFixedKeys,
-		FieldFormatters: defaultFieldFormatters,
-	}
-}
-
-func NewTextFmtFormatter() *logrusfmt.TextFmtFormatter {
-	return &logrusfmt.TextFmtFormatter{*NewTextFormatter()}
-}
-
-func NewJSONFormatter() *logrusfmt.JSONFormatter {
-	return &logrusfmt.JSONFormatter{
-		FixedFields: defaultFixedKeys,
-	}
 }
