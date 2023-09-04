@@ -114,7 +114,7 @@ type Logger interface {
 	// NewName return a new logger with an extended name,
 	// but the same logging activation.
 	WithName(name string) Logger
-	// WithValues return a new logger with more statndard key/value pairs,
+	// WithValues return a new logger with more standard key/value pairs,
 	// but the same logging activation.
 	WithValues(keypairs ...interface{}) Logger
 
@@ -147,6 +147,7 @@ type Logger interface {
 // for a logging context.
 type UnboundLogger interface {
 	Logger
+	WithContext(messageContext ...MessageContext) UnboundLogger
 	BoundLogger() Logger
 }
 

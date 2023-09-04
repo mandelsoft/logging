@@ -92,7 +92,7 @@ func (c *context) Tree() ContextSupport {
 }
 
 func (c *context) GetMessageContext() []MessageContext {
-	return append(c.messageContext[:0:0], c.messageContext...)
+	return sliceCopy(c.messageContext)
 }
 
 func (c *context) Updater() *Updater {
@@ -292,5 +292,5 @@ func shifted(logger logr.Logger) logr.LogSink {
 }
 
 func JoinMessageContext(base []MessageContext, list ...MessageContext) []MessageContext {
-	return append(append(make([]MessageContext, 0, len(base)+len(list)), base...), list...)
+	return sliceAppend(base, list...)
 }

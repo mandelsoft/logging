@@ -182,7 +182,7 @@ V[4] debug
 			logger = logger.WithValues(values...)
 			vstring := ""
 			if len(values) > 0 {
-				vstring = fmt.Sprintf(" %v", values)
+				vstring = " " + strings.Trim(fmt.Sprintf("%v", values), "[]")
 			}
 
 			logger.Debug("debug")

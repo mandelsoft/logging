@@ -265,10 +265,11 @@ and message contexts:
 
 - `Realm`(*string*) the location context of a logging request. This could
   be some kind of denotation for a functional area or Go package. To obtain the
-  package realm for some coding the function `logging.Package()` can be used. Used as message context, the realm name is added as additional attribute (`realm`) to log message.
+  package realm for some coding the function `logging.Package()` can be used. Used as message context, the realm name is added as additional attribute (`realm`) to log message. As condition realms only match the last realm in a message context.
 
 - `RealmPrefix`(*string*) (only as condition) matches against a complete 
-  realm tree specified by a base realm.
+  realm tree specified by a base realm. It matches the last realm in a message
+  context, only.
 
 - `Attribute`(*string,interface{}*) the name of an arbitrary attribute with some
   value. Used as message context, the key/value pair is added to the log message.

@@ -315,7 +315,6 @@ V[3] info plain
 
 			fmt.Printf("\n" + buf.String())
 			Expect("\n" + buf.String()).To(Equal(`
-V[4] debug detail realm test realm detail
 V[3] info detail realm test realm detail
 V[4] debug pkg realm test
 V[3] info pkg realm test

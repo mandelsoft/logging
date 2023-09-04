@@ -70,9 +70,11 @@ func (r realmprefix) Match(messageContext ...MessageContext) bool {
 ////////////////////////////////////////////////////////////////////////////////
 
 func matchRealm(r string, prefix bool, messageContext ...MessageContext) bool {
-	for _, c := range messageContext {
-		if e, ok := c.(Realm); ok && checkRealm(r, e.Name(), prefix) {
-			return true
+	// match only last (most significant) realm in complete aggregated
+	// message context
+	for i := len(messageContext) - 1; i >= 0; i-- {
+		if e, ok := messageContext[i].(Realm); ok {
+			return checkRealm(r, e.Name(), prefix)
 		}
 	}
 	return false
