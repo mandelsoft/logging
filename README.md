@@ -1,6 +1,6 @@
 # Logging for Go with context-specific Log Level Settings
 
-This package provides a wrapper around the [logr](https://ggithub.com/go-logr/logr)
+This package provides a wrapper around the [logr](https://github.com/go-logr/logr)
 logging system supporting a rule based approach to enable log levels
 for dedicated message contexts specified at the logging location.
 
