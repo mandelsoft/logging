@@ -19,10 +19,10 @@
 package logrusfmt
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 
+	"github.com/mandelsoft/logging/utils"
 	"github.com/modern-go/reflect2"
 
 	"github.com/sirupsen/logrus"
@@ -45,7 +45,6 @@ func subst(msg string, values map[string]interface{}) (string, map[string]interf
 	found := map[string]struct{}{}
 
 	tagFunc := func(w io.Writer, tag string) (int, error) {
-
 		v, ok := values[tag]
 		if !ok {
 			return w.Write([]byte("{{" + tag + "}}"))
@@ -54,17 +53,7 @@ func subst(msg string, values map[string]interface{}) (string, map[string]interf
 		if reflect2.IsNil(v) {
 			return 0, nil
 		}
-		switch v.(type) {
-		case string, bool:
-		case int, int64, int32, int16, int8:
-		case float32, float64:
-		case []byte:
-		default:
-			data, err := json.Marshal(v)
-			if err == nil {
-				v = string(data)
-			}
-		}
+		v = utils.FieldValue(nil, v)
 		if s, ok := v.(string); ok {
 			return w.Write([]byte(s))
 		}

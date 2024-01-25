@@ -574,7 +574,58 @@ ERROR <nil> error
 			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.sub \[sub\] "with realm" error=<nil>\n`))
 		})
 	})
+
+	Context("fields", func() {
+		BeforeEach(func() {
+			ctx = logrusl.Human().WithWriter(&buf).New()
+			ctx.SetDefaultLevel(logging.InfoLevel)
+		})
+
+		It("logs simple attribute values", func() {
+			enriched := ctx.WithContext(logging.NewAttribute("attr", "value"))
+			enriched.Logger().Info("with attribute")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with attribute" attr=value\n`))
+		})
+		It("logs value attribute pointer stringer", func() {
+			enriched := ctx.WithContext(logging.NewAttribute("attr", &Pointer{"value"}))
+			enriched.Logger().Info("with attribute")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with attribute" attr=value\n`))
+		})
+		It("logs value attribute values", func() {
+			enriched := ctx.WithContext(logging.NewAttribute("attr", Value{"value"}))
+			enriched.Logger().Info("with attribute")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with attribute" attr=value\n`))
+		})
+		It("logs value simple underlying type", func() {
+			enriched := ctx.WithContext(logging.NewAttribute("attr", Underlying("value")))
+			enriched.Logger().Info("with attribute")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with attribute" attr=value\n`))
+		})
+		It("logs value simple underlying type with substitution", func() {
+			enriched := ctx.WithContext(logging.NewAttribute("attr", Underlying("value")))
+			enriched.Logger().Info("with attribute value {{attr}}")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with attribute value value"\n`))
+		})
+	})
 })
+
+type Value struct {
+	msg string
+}
+
+type Pointer struct {
+	msg string
+}
+
+type Underlying string
+
+func (v Value) String() string {
+	return v.msg
+}
+
+func (v *Pointer) String() string {
+	return v.msg
+}
 
 type X struct{}
 

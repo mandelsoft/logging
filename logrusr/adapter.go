@@ -7,13 +7,13 @@
 package logrusr
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"runtime"
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/mandelsoft/logging/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -158,6 +158,10 @@ func (l *logrusr) WithName(name string) logr.LogSink {
 	return newLogger
 }
 
+type stringer interface {
+	String() string
+}
+
 // listToLogrusFields converts a list of arbitrary length to key/value paris.
 func listToLogrusFields(formatter func(interface{}) string, keysAndValues ...interface{}) logrus.Fields {
 	f := make(logrus.Fields)
@@ -171,25 +175,7 @@ func listToLogrusFields(formatter func(interface{}) string, keysAndValues ...int
 		k, v := keysAndValues[i], keysAndValues[i+1]
 
 		if s, ok := k.(string); ok {
-			// Try to avoid marshaling known types.
-			switch vVal := v.(type) {
-			case int, int8, int16, int32, int64,
-				uint, uint8, uint16, uint32, uint64,
-				float32, float64, complex64, complex128,
-				string, bool:
-				f[s] = vVal
-
-			case []byte:
-				f[s] = string(vVal)
-
-			default:
-				if formatter != nil {
-					f[s] = formatter(v)
-				} else {
-					j, _ := json.Marshal(vVal)
-					f[s] = string(j)
-				}
-			}
+			f[s] = utils.FieldValue(formatter, v)
 		}
 	}
 
