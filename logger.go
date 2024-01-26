@@ -77,8 +77,23 @@ func (l logger) Enabled(level int) bool {
 }
 
 type keyValue struct {
-	key   string
+	name  string
 	value interface{}
+}
+
+var _ keyvalue = (*keyValue)(nil)
+
+type keyvalue interface {
+	Name() string
+	Value() interface{}
+}
+
+func (kv *keyValue) Name() string {
+	return kv.name
+}
+
+func (kv *keyValue) Value() interface{} {
+	return kv.value
 }
 
 // KeyValue provide a key/value pair for the argument list of logging methods.
@@ -91,7 +106,7 @@ type keyValue struct {
 // use cases(see package [github.com/mandelsoft/logging/keyvalue]).
 func KeyValue(key string, value interface{}) *keyValue {
 	return &keyValue{
-		key:   key,
+		name:  key,
 		value: value,
 	}
 }
@@ -100,11 +115,11 @@ func KeyValue(key string, value interface{}) *keyValue {
 func prepare(keypairs []interface{}) []interface{} {
 	for i, e := range keypairs {
 		if i%2 == 0 {
-			if _, ok := e.(*keyValue); ok {
+			if _, ok := e.(keyvalue); ok {
 				var r []interface{}
 				for i := 0; i < len(keypairs); i += 2 {
-					if v, ok := keypairs[i].(*keyValue); ok {
-						r = append(r, v.key, v.value)
+					if v, ok := keypairs[i].(keyvalue); ok {
+						r = append(r, v.Name(), v.Value())
 						i--
 					} else {
 						if i+1 < len(keypairs) {

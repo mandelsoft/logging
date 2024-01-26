@@ -48,7 +48,7 @@ var _ ContextProvider = (*dynamicLogger)(nil)
 func DynamicLogger(ctxp ContextProvider, messageContext ...MessageContext) UnboundLogger {
 	l := &dynamicLogger{
 		ctx:            ctxp.LoggingContext(),
-		messageContext: messageContext,
+		messageContext: explode(messageContext),
 	}
 	return l
 }
@@ -104,6 +104,10 @@ func (d *dynamicLogger) Trace(msg string, keypairs ...interface{}) {
 	d.update().Trace(msg, keypairs...)
 }
 
+func (d *dynamicLogger) GetMessageContext() []MessageContext {
+	return append(d.ctx.Tree().GetMessageContext(), d.messageContext...)
+}
+
 func (d *dynamicLogger) WithName(name string) Logger {
 	l := *d
 	l.names = sliceAppend(l.names, name)
@@ -126,7 +130,7 @@ func (d *dynamicLogger) WithContext(messageContext ...MessageContext) UnboundLog
 		return d
 	}
 	l := *d
-	l.messageContext = sliceAppend(l.messageContext, messageContext...)
+	l.messageContext = sliceAppend(l.messageContext, explode(messageContext)...)
 	l.logger = nil
 	return &l
 }

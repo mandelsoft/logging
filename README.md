@@ -287,20 +287,28 @@ and message contexts:
 
 Meaning of predefined objects in a message context:
 
-| Element     |  Rule Condition  | Message Context | Logger  |  LogMessage Attribute  |
-|-------------|:----------------:|:---------------:|:-------:|:----------------------:|
-| Name        |     &check;      |     &check;     | &check; |        &cross;         |
-| Tag         |     &check;      |     &check;     | &cross; |        &cross;         |
-| Realm       |     &check;      |     &check;     | &cross; |   &check;  (`realm`)   |
-| Attribute   |     &check;      |     &check;     | &cross; |        &check;         |
-| RealmPrefix |     &check;      |     &cross;     | &cross; |        &cross;         |
+| Element       | Rule Condition | Message Context | Logger  | LogMessage Attribute |
+|---------------|:--------------:|:---------------:|:-------:|:--------------------:|
+| Name          |    &check;     |     &check;     | &check; |       &cross;        |
+| Tag           |    &check;     |     &check;     | &cross; |       &cross;        |
+| Realm         |    &check;     |     &check;     | &cross; |  &check;  (`realm`)  |
+| Attribute     |    &check;     |     &check;     | &cross; |       &check;        |
+| RealmPrefix   |    &check;     |     &cross;     | &cross; |       &cross;        |
+| UnboundLogger |    &cross;     |     &check;     | &check; |  &check; (partial)   |
+| Context       |    &cross;     |     &check;     | &check; |  &check; (partial)   |
+
+(* partial means, that only flattened elements matching the appropriate interface will be used)
 
 It is possible to create own objects using the interfaces:
 - `Attacher`: attach information to a logger
 - `Condition`: to be usable as condition in a rule.
+- `MessageContextProvider`: to be usable as provider for multiple message context.
 
 Only objects implementing at least one of those interfaces can
 usefully be passed.
+
+An `[]MessageContext` can also be used as message context, like a `MessageContextProvider`
+it wil be expanded to flat list of effective message contexts.
 
 ## Bound and Unbound Loggers
 

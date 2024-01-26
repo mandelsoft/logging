@@ -634,6 +634,38 @@ ERROR <nil> error
 			log.Info("with key value", "first", "firstvalue", logging.KeyValue("name", "value"), "other", "othervalue")
 			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with key value" name=value other=othervalue\n.{25} info    "with key value" first=firstvalue name=value other=othervalue\n`))
 		})
+		It("attributes", func() {
+			log := ctx.Logger()
+			log.Info("with key value", logging.NewAttribute("name", "value"))
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with key value" name=value\n`))
+		})
+	})
+
+	Context("message context provider", func() {
+		BeforeEach(func() {
+			ctx = logrusl.Human().WithWriter(&buf).New()
+			ctx.SetDefaultLevel(logging.InfoLevel)
+		})
+
+		It("handles slices", func() {
+			mctx := []logging.MessageContext{
+				logging.NewAttribute("alice", 25),
+				logging.NewAttribute("bob", 26),
+			}
+
+			ctx.Logger(mctx, logging.NewAttribute("attr", "value")).Info("3 attrs")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "3 attrs" alice=25 attr=value bob=26\n`))
+		})
+
+		It("handles context", func() {
+			enriched := logrusl.New().WithContext(
+				logging.NewAttribute("alice", 25),
+				logging.NewAttribute("bob", 26),
+			)
+
+			ctx.WithContext(enriched, logging.NewAttribute("attr", "value")).Logger().Info("3 attrs")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "3 attrs" alice=25 attr=value bob=26\n`))
+		})
 	})
 })
 

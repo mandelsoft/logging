@@ -147,6 +147,7 @@ type Logger interface {
 // for a logging context.
 type UnboundLogger interface {
 	Logger
+	GetMessageContext() []MessageContext
 	WithContext(messageContext ...MessageContext) UnboundLogger
 	BoundLogger() Logger
 }
@@ -187,12 +188,22 @@ type ContextProvider interface {
 type LevelFunc func() int
 type SinkFunc func() logr.LogSink
 
+// MessageContextProvider is an interface for objects providing
+// a message context.
+// An [UnboundLogger] or a [Context] is such a provider.
+// A provider can again be used wherever a message context is
+// required.
+type MessageContextProvider interface {
+	GetMessageContext() []MessageContext
+}
+
 // Context describes the interface of a logging context.
 // A logging context determines effective loggers for
 // a given message context based on a set of rules used
 // to map a message context to an effective logger.
 type Context interface {
 	ContextProvider
+	MessageContextProvider
 
 	// GetSink returns the effective logr.LOgSink used as base logger
 	// for this context.

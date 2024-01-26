@@ -23,14 +23,13 @@ import (
 )
 
 type attr struct {
-	name  string
-	value interface{}
+	keyValue
 }
 
 var _ Attribute = (*attr)(nil)
 
 func NewAttribute(name string, value interface{}) Attribute {
-	return &attr{name, value}
+	return &attr{keyValue{name, value}}
 }
 
 func (r *attr) Match(messageContext ...MessageContext) bool {
@@ -40,14 +39,6 @@ func (r *attr) Match(messageContext ...MessageContext) bool {
 		}
 	}
 	return false
-}
-
-func (r *attr) Name() string {
-	return r.name
-}
-
-func (r *attr) Value() interface{} {
-	return r.value
 }
 
 func (r *attr) Attach(l Logger) Logger {

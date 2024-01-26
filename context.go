@@ -224,7 +224,7 @@ func (c *context) ResetRules() {
 
 func (c *context) WithContext(messageContext ...MessageContext) Context {
 	ctx := newWithBase(c)
-	ctx.messageContext = JoinMessageContext(ctx.messageContext, messageContext...)
+	ctx.messageContext = JoinMessageContext(ctx.messageContext, explode(messageContext)...)
 	return ctx
 }
 
@@ -232,6 +232,7 @@ func (c *context) Logger(messageContext ...MessageContext) Logger {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
+	messageContext = explode(messageContext)
 	if len(c.messageContext) > 0 {
 		messageContext = JoinMessageContext(c.messageContext, messageContext...)
 	}
@@ -252,6 +253,9 @@ func (c *context) V(level int, messageContext ...MessageContext) logr.Logger {
 }
 
 func (c *context) Evaluate(base SinkFunc, messageContext ...MessageContext) Logger {
+	if len(messageContext) > 0 {
+		messageContext = explode(messageContext)
+	}
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -293,4 +297,19 @@ func shifted(logger logr.Logger) logr.LogSink {
 
 func JoinMessageContext(base []MessageContext, list ...MessageContext) []MessageContext {
 	return sliceAppend(base, list...)
+}
+
+func explode(messageContext []MessageContext) []MessageContext {
+	eff := []MessageContext{}
+	for _, m := range messageContext {
+		switch e := m.(type) {
+		case []MessageContext:
+			eff = append(eff, explode(e)...)
+		case MessageContextProvider:
+			eff = append(eff, e.GetMessageContext()...)
+		default:
+			eff = append(eff, e)
+		}
+	}
+	return eff
 }
