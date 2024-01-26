@@ -54,10 +54,7 @@ func subst(msg string, values map[string]interface{}) (string, map[string]interf
 			return 0, nil
 		}
 		v = utils.FieldValue(nil, v)
-		if s, ok := v.(string); ok {
-			return w.Write([]byte(s))
-		}
-		return w.Write([]byte(fmt.Sprintf("%#v", v)))
+		return w.Write([]byte(fmt.Sprintf("%v", v)))
 	}
 	result := fasttemplate.ExecuteFuncString(msg, "{{", "}}", tagFunc)
 	if len(found) > 0 {

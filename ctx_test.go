@@ -606,6 +606,34 @@ ERROR <nil> error
 			enriched.Logger().Info("with attribute value {{attr}}")
 			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with attribute value value"\n`))
 		})
+		It("logs value simple underlying type with substitution", func() {
+			enriched := ctx.WithContext(logging.NewAttribute("attr", fmt.Errorf("value")))
+			enriched.Logger().Info("with attribute value {{attr}}")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with attribute value value"\n`))
+		})
+	})
+
+	Context("fields values", func() {
+		BeforeEach(func() {
+			ctx = logrusl.Human().WithWriter(&buf).New()
+			ctx.SetDefaultLevel(logging.InfoLevel)
+		})
+		It("key value", func() {
+			log := ctx.Logger()
+			log.Info("with key value", logging.KeyValue("name", "value"))
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with key value" name=value\n`))
+		})
+		It("key value sequence", func() {
+			log := ctx.Logger()
+			log.Info("with key value", logging.KeyValue("name", "value"), logging.KeyValue("other", "othervalue"))
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with key value" name=value other=othervalue\n`))
+		})
+		It("mixed key value sequence", func() {
+			log := ctx.Logger()
+			log.Info("with key value", logging.KeyValue("name", "value"), "other", "othervalue")
+			log.Info("with key value", "first", "firstvalue", logging.KeyValue("name", "value"), "other", "othervalue")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    "with key value" name=value other=othervalue\n.{25} info    "with key value" first=firstvalue name=value other=othervalue\n`))
+		})
 	})
 })
 

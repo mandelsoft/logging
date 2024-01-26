@@ -70,12 +70,23 @@ Depending on the rule set configured for the used logging context, the level
 for the given message context decides, which message to pass to the log sink of
 the initial `logr.Logger`.
 
+Like a traditional `logr.Logger`, the logging messages take a string and an
+optional list a key/value arguments to describe formalized logging fields
+for a structured log output.
+
+Instead of two separate arguments for key and value, the function `KeyValue`
+can be used to provide a key/value pair as single argument. This function
+can be used to define standard keys for key/value pairs for dedicated usage
+scenarios (see package `keyvalue`, which provide some standards for errors, ids or names).
+
 Alternatively a traditional `logr.Logger` for the given message context can be
 obtained by using the `V` method:
 
 ```go
   ctx.V(logging.InfoLevel, realm).Info("my message")
 ```
+
+Those loggers do NOT support the `KeyValue` argument described above.
 
 The sink for this logger is configured to accept messages according to the
 log level determined by th rule set of the logging context for the given
@@ -86,7 +97,7 @@ which is potentially shifted to the level of the base `logr.Logger`
 used to set up the context, when forwarding to the original sink. This means
 they are always directly using the log levels 0..*n*.
 
-It is possible to get a loggings context with a predefined message context
+It is possible to get a logging context with a predefined message context
 with
 
 ```go

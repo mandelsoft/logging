@@ -16,44 +16,38 @@
  *  limitations under the License.
  */
 
-package utils
+package keyvalue
 
 import (
-	"encoding/json"
-	"fmt"
-	"reflect"
+	"github.com/mandelsoft/logging"
 )
 
-func FieldValue(formatter func(interface{}) string, v interface{}) interface{} {
-	// Try to avoid marshaling known types.
-	switch vVal := v.(type) {
-	case int, int8, int16, int32, int64,
-		uint, uint8, uint16, uint32, uint64,
-		float32, float64, complex64, complex128,
-		string, bool:
-		return vVal
+const ERROR = "error"
 
-	case []byte:
-		return string(vVal)
-	case fmt.Stringer:
-		return vVal.String()
-	case error:
-		return vVal.Error()
+func Error(v interface{}) interface{} {
+	return logging.KeyValue(ERROR, v)
+}
 
-	default:
-		vv := reflect.ValueOf(v)
-		switch vv.Kind() {
-		case reflect.Struct, reflect.Map:
-			if formatter == nil {
-				j, _ := json.Marshal(vVal)
-				return string(j)
-			}
-			fallthrough
-		default:
-			if formatter != nil {
-				return formatter(v)
-			}
-			return v
-		}
-	}
+const ID = "id"
+
+func Id(v interface{}) interface{} {
+	return logging.KeyValue(ERROR, v)
+}
+
+const NAME = "name"
+
+func Name(v interface{}) interface{} {
+	return logging.KeyValue(NAME, v)
+}
+
+const NAMESPACE = "namespace"
+
+func Namespace(v interface{}) interface{} {
+	return logging.KeyValue(NAMESPACE, v)
+}
+
+const ELEMENT = "element"
+
+func Element(v interface{}) interface{} {
+	return logging.KeyValue(ELEMENT, v)
 }
