@@ -302,13 +302,30 @@ func JoinMessageContext(base []MessageContext, list ...MessageContext) []Message
 func explode(messageContext []MessageContext) []MessageContext {
 	eff := []MessageContext{}
 	for _, m := range messageContext {
-		switch e := m.(type) {
-		case []MessageContext:
-			eff = append(eff, explode(e)...)
-		case MessageContextProvider:
-			eff = append(eff, e.GetMessageContext()...)
-		default:
-			eff = append(eff, e)
+		eff = append(eff, ExplodeMessageContext(m)...)
+	}
+	return eff
+}
+
+// ExplodeMessageContext flattens a given message context.
+func ExplodeMessageContext(m MessageContext) []MessageContext {
+	switch e := m.(type) {
+	case []MessageContext:
+		return explode(e)
+	case MessageContextProvider:
+		return e.GetMessageContext()
+	default:
+		return []MessageContext{e}
+	}
+}
+
+// ExcludeFromMessageContext flattens a given message context
+// and eliminates all entries with the given type.
+func ExcludeFromMessageContext[T any](ctx MessageContext) MessageContext {
+	eff := []MessageContext{}
+	for _, m := range ExplodeMessageContext(ctx) {
+		if _, ok := m.(T); !ok {
+			eff = append(eff, m)
 		}
 	}
 	return eff
