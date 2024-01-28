@@ -22,9 +22,37 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+
+	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 )
 
+// use package for package doc
+var (
+	_ logr.Logger
+	_ logrus.Logger
+)
+
+type ignoreKeyPair struct{}
+
+func (n ignoreKeyPair) String() string {
+	return "<unset>"
+}
+
+// Ignore can be used as value for a message field, which should not be present,
+// but is still given in the values list. This can be used to avoid complex value
+// list generation for optional fields of a logging call.
+//
+// This value is only considered as special value for the logging functions
+// of this module, or if a message formatter of this module is used.
+// For plain [logrus] formatter, or [logr] logger it is just a regular value.
+// Its string representation is "<unset>"-
+var Ignore = &ignoreKeyPair{}
+
 func FieldValue(formatter func(interface{}) string, v interface{}) interface{} {
+	if v == Ignore {
+		return v
+	}
 	// Try to avoid marshaling known types.
 	switch vVal := v.(type) {
 	case int, int8, int16, int32, int64,

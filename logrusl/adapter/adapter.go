@@ -56,13 +56,18 @@ func NewLogger(buf ...*bytes.Buffer) *logrus.Logger {
 
 func NewTextFormatter() *logrusfmt.TextFormatter {
 	return &logrusfmt.TextFormatter{
+		PadLevelText:    true,
 		FixedFields:     defaultFixedKeys,
 		FieldFormatters: defaultFieldFormatters,
 	}
 }
 
-func NewTextFmtFormatter() *logrusfmt.TextFmtFormatter {
-	return &logrusfmt.TextFmtFormatter{*NewTextFormatter()}
+func NewTextFmtFormatter(padded ...bool) *logrusfmt.TextFmtFormatter {
+	f := NewTextFormatter()
+	if len(padded) > 0 && padded[0] {
+		f.PaddedFixedFields = len(f.FixedFields) - 1
+	}
+	return &logrusfmt.TextFmtFormatter{*f}
 }
 
 func NewJSONFormatter() *logrusfmt.JSONFormatter {

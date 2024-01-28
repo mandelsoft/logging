@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"runtime"
 	"sort"
@@ -20,6 +21,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/mandelsoft/logging/utils"
 	"github.com/modern-go/reflect2"
 )
 
@@ -43,6 +45,9 @@ type FieldFormatters map[string]FieldFormatter
 type FieldFormatter func(w io.Writer, key string, value interface{}, needsQuoting func(string) bool)
 
 func PlainValue(w io.Writer, key string, value interface{}, needsQuoting func(string) bool) {
+	if value == utils.Ignore {
+		return
+	}
 	if reflect2.IsNil(value) {
 		w.Write([]byte("<nil>"))
 		return
@@ -60,6 +65,9 @@ func PlainValue(w io.Writer, key string, value interface{}, needsQuoting func(st
 }
 
 func BracketValue(w io.Writer, key string, value interface{}, needsQuoting func(string) bool) {
+	if value == utils.Ignore {
+		return
+	}
 	if reflect2.IsNil(value) {
 		w.Write([]byte("<nil>"))
 		return
@@ -73,14 +81,48 @@ func BracketValue(w io.Writer, key string, value interface{}, needsQuoting func(
 }
 
 func KeyValue(w io.Writer, key string, value interface{}, needsQuoting func(string) bool) {
+	if value == utils.Ignore {
+		return
+	}
 	PlainValue(w, key, key, needsQuoting)
 	w.Write([]byte{'='})
 	PlainValue(w, key, value, needsQuoting)
 }
 
 func LevelValue(w io.Writer, key string, value interface{}, needsQuoting func(string) bool) {
+	if value == utils.Ignore {
+		return
+	}
 	f := fmt.Sprintf(fmt.Sprintf("%%-%ds", maxlevellength), value.(string))
 	PlainValue(w, key, f, func(string) bool { return false })
+}
+
+type paddedFieldFormatter struct {
+	formatter FieldFormatter
+	max       int
+}
+
+func (f *paddedFieldFormatter) Format(w io.Writer, key string, value interface{}, needsQuoting func(string) bool) {
+	var buf bytes.Buffer
+	f.formatter(&buf, key, value, needsQuoting)
+	w.Write(buf.Bytes())
+
+	l := utf8.RuneCount(buf.Bytes())
+	if l > f.max {
+		f.max = l
+	} else {
+		if l < f.max {
+			w.Write([]byte(fmt.Sprintf(fmt.Sprintf("%%%ds", f.max-l), "")))
+		}
+	}
+}
+
+// PaddedFieldFormatter returns a field formatter, which
+// incrementally aligns the value of a given field formatter.
+// It keeps track of the maximum field length known from the previous calls
+// and pads new values accordingly.
+func PaddedFieldFormatter(formatter FieldFormatter) func(w io.Writer, key string, value interface{}, needsQuoting func(string) bool) {
+	return (&paddedFieldFormatter{formatter: formatter}).Format
 }
 
 // TextFormatter formats logs into text
@@ -157,6 +199,11 @@ type TextFormatter struct {
 	// The default formatter is KeyValue.
 	FieldFormatters FieldFormatters
 
+	// PaddedFixedFields specified the number of
+	// fixed fields, which should be incrementally padded
+	// by observing the field length of the previous log entries.
+	PaddedFixedFields int
+
 	// CallerPrettyfier can be set by the user to modify the content
 	// of the function and file keys in the data when ReportCaller is
 	// activated. If any of the returned value is the empty string the
@@ -164,20 +211,28 @@ type TextFormatter struct {
 	CallerPrettyfier func(*runtime.Frame) (function string, file string)
 
 	terminalInitOnce sync.Once
-
-	// The max length of the level text, generated dynamically on init
-	levelTextMaxLength int
 }
 
 func (f *TextFormatter) init(entry *Entry) {
 	if entry.Logger != nil {
 		f.isTerminal = checkIfTerminal(entry.Logger.Out)
 	}
-	// Get the max length of the level text
-	for _, level := range AllLevels {
-		levelTextLength := utf8.RuneCount([]byte(level.String()))
-		if levelTextLength > f.levelTextMaxLength {
-			f.levelTextMaxLength = levelTextLength
+	if f.FieldFormatters == nil {
+		f.FieldFormatters = map[string]FieldFormatter{}
+	}
+	f.FieldFormatters = maps.Clone(f.FieldFormatters)
+	if f.PadLevelText {
+		f.FieldFormatters[FieldKeyLevel] = LevelValue
+	} else {
+		f.FieldFormatters[FieldKeyLevel] = PlainValue
+	}
+
+	if f.PaddedFixedFields > 0 {
+		for i, n := range f.FixedFields {
+			if i == f.PaddedFixedFields {
+				break
+			}
+			f.FieldFormatters[n] = PaddedFieldFormatter(f.FieldFormatters[n])
 		}
 	}
 }
@@ -203,7 +258,9 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 
 	data := make(Fields)
 	for k, v := range entry.Data {
-		data[k] = v
+		if v != utils.Ignore {
+			data[k] = v
+		}
 	}
 	prefixFieldClashes(data, f.FieldMap, entry.HasCaller())
 	keys := make([]string, 0, len(data))
@@ -229,34 +286,50 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 		fixed = f.FixedFields
 	}
 
+	timestampFormat := f.TimestampFormat
+	if timestampFormat == "" {
+		timestampFormat = defaultTimestampFormat
+	}
+
 	for _, field := range fixed {
+		effname := f.FieldMap.resolve(fieldKey(field))
 		switch field {
 		case FieldKeyTime:
 			if !f.DisableTimestamp {
-				fixedKeys = append(fixedKeys, field)
+				fixedKeys = append(fixedKeys, effname)
+				data[effname] = entry.Time.Format(timestampFormat)
 			}
 		case FieldKeyLevel:
-			fixedKeys = append(fixedKeys, field)
+			fixedKeys = append(fixedKeys, effname)
+			data[effname] = entry.Level.String()
 		case FieldKeyMsg:
 			if entry.Message != "" {
-				fixedKeys = append(fixedKeys, field)
+				fixedKeys = append(fixedKeys, effname)
+				data[effname] = entry.Message
 			}
 		case FieldKeyFunc:
 			if funcVal != "" {
-				fixedKeys = append(fixedKeys, field)
+				fixedKeys = append(fixedKeys, effname)
+				data[effname] = funcVal
 			}
 		case FieldKeyFile:
 			if fileVal != "" {
-				fixedKeys = append(fixedKeys, field)
+				fixedKeys = append(fixedKeys, effname)
+				data[effname] = fileVal
 			}
 		default:
+			found := false
 			for i := 0; i < len(keys); i++ {
 				if keys[i] == field {
-					fixedKeys = append(fixedKeys, field)
 					keys = append(keys[:i], keys[i+1:]...)
-					i--
+					found = true
+					break
 				}
 			}
+			if !found {
+				data[field] = utils.Ignore
+			}
+			fixedKeys = append(fixedKeys, field)
 		}
 	}
 
@@ -279,11 +352,6 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 		b = &bytes.Buffer{}
 	}
 
-	timestampFormat := f.TimestampFormat
-	if timestampFormat == "" {
-		timestampFormat = defaultTimestampFormat
-	}
-
 	var levelColor int
 	if f.isColored() {
 		switch entry.Level {
@@ -304,26 +372,18 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 	}
 
 	for _, key := range fixedKeys {
-		var value interface{}
-		switch key {
-		case FieldKeyTime:
-			value = entry.Time.Format(timestampFormat)
-		case FieldKeyLevel:
-			value = entry.Level.String()
-		case FieldKeyMsg:
-			value = entry.Message
-		case FieldKeyFunc:
-			value = funcVal
-		case FieldKeyFile:
-			value = fileVal
-		default:
-			value = data[key]
-		}
 
-		if b.Len() > 0 {
-			b.WriteByte(' ')
+		value := data[key]
+
+		var buf bytes.Buffer
+		f.appendKeyValue(&buf, key, value)
+
+		if buf.Len() > 0 {
+			if b.Len() > 0 {
+				b.WriteByte(' ')
+			}
+			b.Write(buf.Bytes())
 		}
-		f.appendKeyValue(b, key, value)
 	}
 
 	if levelColor > 0 {

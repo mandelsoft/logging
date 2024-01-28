@@ -16,6 +16,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/mandelsoft/logging/utils"
 )
 
 type fieldKey string
@@ -81,13 +83,15 @@ type JSONFormatter struct {
 func (f *JSONFormatter) Format(entry *Entry) ([]byte, error) {
 	data := make(Fields, len(entry.Data)+len(defaultFixedFields))
 	for k, v := range entry.Data {
-		switch v := v.(type) {
-		case error:
-			// Otherwise errors are ignored by `encoding/json`
-			// https://github.com/sirupsen/logrus/issues/137
-			data[k] = v.Error()
-		default:
-			data[k] = v
+		if v != utils.Ignore {
+			switch v := v.(type) {
+			case error:
+				// Otherwise errors are ignored by `encoding/json`
+				// https://github.com/sirupsen/logrus/issues/137
+				data[k] = v.Error()
+			default:
+				data[k] = v
+			}
 		}
 	}
 

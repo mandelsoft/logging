@@ -20,6 +20,7 @@ package logging
 
 import (
 	"github.com/go-logr/logr"
+	"github.com/mandelsoft/logging/utils"
 )
 
 type logger struct {
@@ -116,22 +117,34 @@ func prepare(keypairs []interface{}) []interface{} {
 	for i, e := range keypairs {
 		if i%2 == 0 {
 			if _, ok := e.(keyvalue); ok {
-				var r []interface{}
-				for i := 0; i < len(keypairs); i += 2 {
-					if v, ok := keypairs[i].(keyvalue); ok {
-						r = append(r, v.Name(), v.Value())
-						i--
-					} else {
-						if i+1 < len(keypairs) {
-							r = append(r, keypairs[i], keypairs[i+1])
-						} else {
-							r = append(r, keypairs[i]) // preserve the erroneous value
-						}
-					}
-				}
-				return r
+				return _prepare(keypairs)
+			}
+		} else {
+			if e == utils.Ignore {
+				return _prepare(keypairs)
 			}
 		}
 	}
 	return keypairs
+}
+
+func _prepare(keypairs []interface{}) []interface{} {
+	var r []interface{}
+	for i := 0; i < len(keypairs); i += 2 {
+		if v, ok := keypairs[i].(keyvalue); ok {
+			if v.Value() != utils.Ignore {
+				r = append(r, v.Name(), v.Value())
+			}
+			i--
+		} else {
+			if i+1 < len(keypairs) {
+				if keypairs[i+1] != utils.Ignore {
+					r = append(r, keypairs[i], keypairs[i+1])
+				}
+			} else {
+				r = append(r, keypairs[i]) // preserve the erroneous value
+			}
+		}
+	}
+	return r
 }

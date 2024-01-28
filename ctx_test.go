@@ -23,6 +23,9 @@ import (
 	"fmt"
 
 	"github.com/mandelsoft/logging/logrusl"
+	"github.com/mandelsoft/logging/logrusl/adapter"
+	"github.com/mandelsoft/logging/logrusr"
+	"github.com/mandelsoft/logging/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
@@ -556,7 +559,8 @@ ERROR <nil> error
 			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.nested.sub "with name" error=<nil>\n`))
 
 			buf.Reset()
-			enriched.Logger(logging.Realm("absolute")).Error("with name")
+			enriched.Logger(logging.Realm("absolute")).
+				Error("with name")
 			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.nested \[absolute\] "with name" error=<nil>\n`))
 		})
 
@@ -667,6 +671,28 @@ ERROR <nil> error
 			Expect(buf.String()).To(MatchRegexp(`.{25} info    "3 attrs" alice=25 attr=value bob=26\n`))
 		})
 	})
+
+	Context("special values", func() {
+		It("ignores NoValue", func() {
+			ctx.Logger().Info("test", "some", "value", "ignored", utils.Ignore, "next", "value")
+			Expect(buf.String()).To(Equal("V[3] test some value next value\n"))
+		})
+
+		It("logr preserves NoValue", func() {
+			ctx.Logger().V(0).Info("test", "some", "value", "ignored", utils.Ignore, "next", "value")
+			Expect(buf.String()).To(Equal("INFO test some value ignored <unset> next value\n"))
+		})
+
+		It("own formatter handles NoValue", func() {
+			l := adapter.NewLogger(&buf)
+			l.Formatter = adapter.NewTextFmtFormatter()
+			ctx.SetBaseLogger(logrusr.New(l))
+
+			ctx.Logger().V(3).Info("test", "some", "value", "ignored", utils.Ignore, "next", "value")
+			Expect(buf.String()).To(MatchRegexp(`.{25} info    test next=value some=value\n`))
+		})
+	})
+
 })
 
 type Value struct {

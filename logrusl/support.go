@@ -45,8 +45,8 @@ func (s Settings) WithFormatter(f logrus.Formatter) Settings {
 	return s
 }
 
-func (s Settings) Human() Settings {
-	s.Formatter = adapter.NewTextFmtFormatter()
+func (s Settings) Human(padded ...bool) Settings {
+	s.Formatter = adapter.NewTextFmtFormatter(padded...)
 	return s
 }
 
@@ -86,8 +86,8 @@ func WithFormatter(f logrus.Formatter) Settings {
 	return Settings{}.WithFormatter(f)
 }
 
-func Human() Settings {
-	return Settings{}.Human()
+func Human(padded ...bool) Settings {
+	return Settings{}.Human(padded...)
 }
 
 func JSON() Settings {
