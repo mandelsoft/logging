@@ -22,17 +22,17 @@ import (
 	"bytes"
 	"fmt"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/sirupsen/logrus"
+	"github.com/tonglil/buflogr"
+
+	"github.com/mandelsoft/logging"
 	"github.com/mandelsoft/logging/logrusl"
 	"github.com/mandelsoft/logging/logrusl/adapter"
 	"github.com/mandelsoft/logging/logrusr"
 	"github.com/mandelsoft/logging/utils"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/sirupsen/logrus"
-
-	"github.com/tonglil/buflogr"
-
-	"github.com/mandelsoft/logging"
 )
 
 var pkg = logging.Package()
@@ -56,6 +56,7 @@ var _ = Describe("context test", func() {
 		ctx.Logger().Info("info")
 		ctx.Logger().Warn("warn")
 		ctx.Logger().Error("error")
+		ctx.Logger().LogError(fmt.Errorf("message"), "error")
 
 		fmt.Printf("%s\n", buf.String())
 
@@ -63,6 +64,7 @@ var _ = Describe("context test", func() {
 V[3] info
 V[2] warn
 ERROR <nil> error
+ERROR message error
 `))
 	})
 
@@ -552,30 +554,30 @@ ERROR <nil> error
 		It("adds name to logger name", func() {
 			enriched := ctx.WithContext(logging.NewName("test")).WithContext(logging.NewName("nested"))
 			enriched.Logger().Error("with name")
-			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.nested "with name" error=<nil>\n`))
+			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.nested "with name"\n`))
 
 			buf.Reset()
 			enriched.Logger(logging.NewName("sub")).Error("with name")
-			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.nested.sub "with name" error=<nil>\n`))
+			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.nested.sub "with name"\n`))
 
 			buf.Reset()
 			enriched.Logger(logging.Realm("absolute")).
 				Error("with name")
-			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.nested \[absolute\] "with name" error=<nil>\n`))
+			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.nested \[absolute\] "with name"\n`))
 		})
 
 		It("adds realm as key/value pair", func() {
 			enriched := ctx.WithContext(logging.NewRealm("test")).WithContext(logging.NewRealm("other"), logging.NewName("test"))
 			enriched.Logger().Error("with realm")
-			Expect(buf.String()).To(MatchRegexp(`.{25} error   test \[other\] "with realm" error=<nil>\n`))
+			Expect(buf.String()).To(MatchRegexp(`.{25} error   test \[other\] "with realm"\n`))
 
 			buf.Reset()
 			enriched.Logger(logging.NewRealm("sub")).Error("with realm")
-			Expect(buf.String()).To(MatchRegexp(`.{25} error   test \[sub\] "with realm" error=<nil>\n`))
+			Expect(buf.String()).To(MatchRegexp(`.{25} error   test \[sub\] "with realm"\n`))
 
 			buf.Reset()
 			enriched.Logger(logging.NewRealm("sub"), logging.NewName("sub")).Error("with realm")
-			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.sub \[sub\] "with realm" error=<nil>\n`))
+			Expect(buf.String()).To(MatchRegexp(`.{25} error   test.sub \[sub\] "with realm"\n`))
 		})
 	})
 

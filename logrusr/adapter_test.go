@@ -20,6 +20,7 @@ package logrusr_test
 
 import (
 	"bytes"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -51,6 +52,18 @@ var _ = Describe("mapping test", func() {
 		log.SetOutput(buf)
 		ctx := logging.New(logrusr.New(log))
 		ctx.Logger().Error("test")
-		Expect(buf.String()).To(Equal("{\"error\":null,\"level\":\"error\",\"msg\":\"test\"}\n"))
+		Expect(buf.String()).To(Equal("{\"level\":\"error\",\"msg\":\"test\"}\n"))
 	})
+	
+	It("maps Error with err to Error", func() {
+		buf := &bytes.Buffer{}
+		log := logrus.New()
+		log.SetLevel(9)
+		log.SetFormatter(&logrus.JSONFormatter{DisableTimestamp: true})
+		log.SetOutput(buf)
+		ctx := logging.New(logrusr.New(log))
+		ctx.Logger().LogError(fmt.Errorf("errmsg"), "test")
+		Expect(buf.String()).To(Equal("{\"error\":\"errmsg\",\"level\":\"error\",\"msg\":\"test\"}\n"))
+	})
+
 })
