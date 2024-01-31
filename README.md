@@ -4,7 +4,16 @@ This package provides a wrapper around the [logr](https://github.com/go-logr/log
 logging system supporting a rule based approach to enable log levels
 for dedicated message contexts specified at the logging location.
 
-The rule set is configured for a logging context:
+The rule set is configured for a logging context (`Context`). It holds
+information about the rule set, log level settings, a standard 
+[message context](#message-contexts-and-conditions) and the configured
+base logger (a `logr.Logger`). With this information it is then used to
+create `Logger` objects (optionally for sub message contexts), which can
+be used to issue log messages for some standard levels.
+The setting of the context decide together with the message context
+of a logger about its active log level.
+
+A new logging context can be created with:
 
 ```go
     ctx := logging.New(logrLogger)
@@ -170,6 +179,30 @@ or
   logging.Log().V(logging.DebugLevel).Info(...
 ```
 
+## Attribution Context
+
+An `AttributionContext` is some kind of lightweigt logging context.
+It based on a regular context and holds a message context and standard
+value (key pair) settings for issued log messages, but no rule environment
+for influencing the log output and no base logger. These elements are
+inherited from the base logging context.
+
+Like a logging context an attribution context can be used to obtain loggers,
+whose activation level is determined from the base logging context and the 
+additional message context provided by the attribution context.
+
+Additionally, they provide the possibility to create sub context for
+more specific settings, which will be forworded to the created logger objects. 
+
+```go
+actx := logging.NewAttributionContext(ctx, logging.NewAttribute("name", "value")).Withvalues("key", "value")
+logger := actx.Logger()
+logger.Info("message", "otherkey", "othervalue")
+```
+
+In this example, the attribute setting and the key/value pair will be inherited
+by the generated logger and added to the log messages issued using this logger.
+
 ## Configuration
 
 It is possible to configure a logging context from a textual configuration
@@ -228,7 +261,8 @@ The standard registry can be obtained by `config.DefaultRegistry()`
 
 Logging contents can inherit from base contexts. This way the rule set,
 logger and default level settings can be reused for a sub-level context.
-THis contexts then provides a new scope to define additional rules
+In contrast to [attribution contexts](#attribution-context) such a context
+then provides a new scope to define additional rules
 and settings only valid for this nested context. Settings done here are not
 visible to log requests evaluated against the base context.
 
@@ -242,6 +276,20 @@ context can be obtained by:
 ```go
   ctx := logging.NewWithBase(logging.DefaultContext())
 ```
+
+or just with 
+
+```go
+ctx := logging.DefaultContext().WithContext(<additional message context>)
+
+to directly add a sub sequent message context.
+```
+
+Using nested logging contexts it more expensive than just using nested
+attribution contexts based on a logging context, because of the inheritance
+of the rule environment.
+If only a subsequent settings for created loggers are required (message context,
+logger names and key/value pairs) an attribution context should be preferred.
 
 ## Preconfigured Rules, Message Contexts and Conditions
 
@@ -359,8 +407,9 @@ This library contains some additional special mappings of *logr*, also.
 
 ### `logrus`
 
-The support includes three new logrus 
-entry formatters in package `logrusfmt`, able to be configurable to best match the features of this library.
+The support includes three new logrus entry formatters in
+package `logrusfmt`, able to be configurable to best match
+the features of this library.
 
 - `TextFormatter` an extended logrus.TextFormatter with
   extended capabilities to render an entry.
@@ -380,5 +429,5 @@ entry formatters in package `logrusfmt`, able to be configurable to best match t
   provided by this logging system.
 
 The package `logrusl` provides configuration methods to 
-achieve a `logging.LogContext` based on *logrus* with special 
+achieve a `logging.Context` based on *logrus* with special 
 preconfigured configurations.

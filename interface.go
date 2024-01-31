@@ -185,6 +185,12 @@ type ContextProvider interface {
 	LoggingContext() Context
 }
 
+// AttributionContextProvider is an interface
+// for all object able to provide acces to an AttributionContext.
+type AttributionContextProvider interface {
+	AttributionContext() AttributionContext
+}
+
 type LevelFunc func() int
 type SinkFunc func() logr.LogSink
 
@@ -197,12 +203,39 @@ type MessageContextProvider interface {
 	GetMessageContext() []MessageContext
 }
 
+// AttributionContext describes a [Context], a
+// [MessageContext] and a set of preset values.
+// which can be used to gain a [Logger] or
+// a subsequent [AttributionContext].
+type AttributionContext interface {
+	ContextProvider
+	AttributionContextProvider
+	MessageContextProvider
+
+	// WithContext provides a new logging Context enriched by the given standard
+	// message context
+	WithContext(messageContext ...MessageContext) AttributionContext
+	// WithName provides a new AttributionContext adding
+	// a name component to provided [Logger] objects.
+	WithName(name string) AttributionContext
+	// WithValues adds keypairs implicitly used for [Logger] object
+	// creation..
+	WithValues(keypairs ...interface{}) AttributionContext
+
+	// Logger return the effective logger for the given message context.
+	Logger(...MessageContext) Logger
+	// V returns the effective logr.Logger for the given message context with
+	// the given base level.
+	V(level int, mctx ...MessageContext) logr.Logger
+}
+
 // Context describes the interface of a logging context.
 // A logging context determines effective loggers for
 // a given message context based on a set of rules used
 // to map a message context to an effective logger.
 type Context interface {
 	ContextProvider
+	AttributionContextProvider
 	MessageContextProvider
 
 	// GetSink returns the effective logr.LOgSink used as base logger

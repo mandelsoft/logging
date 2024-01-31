@@ -25,14 +25,10 @@ import (
 )
 
 type dynamicLogger struct {
-	lock           sync.Mutex
-	watermark      int64
-	ctx            Context
-	messageContext []MessageContext
-	logger         Logger
-
-	names  []string
-	values []interface{}
+	attribution AttributionContext
+	lock        sync.Mutex
+	watermark   int64
+	logger      Logger
 }
 
 var _ Logger = (*dynamicLogger)(nil)
@@ -45,10 +41,9 @@ var _ ContextProvider = (*dynamicLogger)(nil)
 // without losing track to the config.
 // Regular loggers provided by a context keep their setting from the
 // matching rule valid during its creation.
-func DynamicLogger(ctxp ContextProvider, messageContext ...MessageContext) UnboundLogger {
+func DynamicLogger(ctxp AttributionContextProvider, messageContext ...MessageContext) UnboundLogger {
 	l := &dynamicLogger{
-		ctx:            ctxp.LoggingContext(),
-		messageContext: explode(messageContext),
+		attribution: ctxp.AttributionContext().WithContext(messageContext...),
 	}
 	return l
 }
@@ -61,23 +56,17 @@ func (d *dynamicLogger) update() Logger {
 	// with intermediate config requests, but this glitch does not hamper,
 	// because the watermark assures update with the next call,
 	// so no configs are finally lost.
-	watermark := d.ctx.Tree().Updater().Watermark()
+	watermark := d.LoggingContext().Tree().Updater().Watermark()
 	if d.logger == nil || watermark > d.watermark {
 		// update logger and incorporate local modifications
-		d.logger = d.ctx.Logger(d.messageContext...)
-		for _, n := range d.names {
-			d.logger = d.logger.WithName(n)
-		}
-		if len(d.values) > 0 {
-			d.logger = d.logger.WithValues(d.values...)
-		}
+		d.logger = d.attribution.Logger()
 		d.watermark = watermark
 	}
 	return d.logger
 }
 
 func (d *dynamicLogger) LoggingContext() Context {
-	return d.ctx
+	return d.attribution.LoggingContext()
 }
 
 func (d *dynamicLogger) LogError(err error, msg string, keypairs ...interface{}) {
@@ -105,12 +94,12 @@ func (d *dynamicLogger) Trace(msg string, keypairs ...interface{}) {
 }
 
 func (d *dynamicLogger) GetMessageContext() []MessageContext {
-	return append(d.ctx.Tree().GetMessageContext(), d.messageContext...)
+	return d.attribution.GetMessageContext()
 }
 
 func (d *dynamicLogger) WithName(name string) Logger {
 	l := *d
-	l.names = sliceAppend(l.names, name)
+	l.attribution = l.attribution.WithName(name)
 	l.logger = nil
 	return &l
 }
@@ -120,7 +109,7 @@ func (d *dynamicLogger) WithValues(keypairs ...interface{}) Logger {
 		return d
 	}
 	l := *d
-	l.values = sliceAppend(l.values, keypairs[:2*(len(keypairs)/2)]...)
+	l.attribution = l.attribution.WithValues(keypairs...)
 	l.logger = nil
 	return &l
 }
@@ -130,7 +119,7 @@ func (d *dynamicLogger) WithContext(messageContext ...MessageContext) UnboundLog
 		return d
 	}
 	l := *d
-	l.messageContext = sliceAppend(l.messageContext, explode(messageContext)...)
+	l.attribution = l.attribution.WithContext(messageContext...)
 	l.logger = nil
 	return &l
 }

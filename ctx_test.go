@@ -59,6 +59,7 @@ var _ = Describe("context test", func() {
 		ctx.Logger().LogError(fmt.Errorf("message"), "error")
 
 		fmt.Printf("%s\n", buf.String())
+		fmt.Printf("%s\n", buf.String())
 
 		Expect("\n" + buf.String()).To(Equal(`
 V[3] info

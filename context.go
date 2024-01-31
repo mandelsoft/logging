@@ -124,6 +124,10 @@ func (c *context) LoggingContext() Context {
 	return c
 }
 
+func (c *context) AttributionContext() AttributionContext {
+	return NewAttributionContext(c)
+}
+
 func (c *context) GetSink() logr.LogSink {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -314,6 +318,8 @@ func ExplodeMessageContext(m MessageContext) []MessageContext {
 		return explode(e)
 	case MessageContextProvider:
 		return e.GetMessageContext()
+	case string:
+		return []MessageContext{NewAttribute("message", e)}
 	default:
 		return []MessageContext{e}
 	}

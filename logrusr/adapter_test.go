@@ -54,7 +54,7 @@ var _ = Describe("mapping test", func() {
 		ctx.Logger().Error("test")
 		Expect(buf.String()).To(Equal("{\"level\":\"error\",\"msg\":\"test\"}\n"))
 	})
-	
+
 	It("maps Error with err to Error", func() {
 		buf := &bytes.Buffer{}
 		log := logrus.New()
