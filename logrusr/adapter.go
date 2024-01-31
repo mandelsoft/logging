@@ -126,10 +126,11 @@ func (l *logrusr) Error(err error, msg string, keysAndValues ...interface{}) {
 		log = log.WithField("caller", c)
 	}
 
-	log.
-		WithFields(listToLogrusFields(l.defaultFormatter, keysAndValues...)).
-		WithError(err).
-		Error(msg)
+	e := log.WithFields(listToLogrusFields(l.defaultFormatter, keysAndValues...))
+	if err != nil {
+		e = e.WithError(err)
+	}
+	e.Error(msg)
 }
 
 // WithValues returns a new logger with additional key/values pairs. This is
