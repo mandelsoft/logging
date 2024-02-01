@@ -146,6 +146,8 @@ type Logger interface {
 // An unbound logger can be created with function DynamicLogger
 // for a logging context.
 type UnboundLogger interface {
+	ContextProvider
+	AttributionContextProvider
 	Logger
 	GetMessageContext() []MessageContext
 	WithContext(messageContext ...MessageContext) UnboundLogger

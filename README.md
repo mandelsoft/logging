@@ -181,7 +181,7 @@ or
 
 ## Attribution Context
 
-An `AttributionContext` is some kind of lightweigt logging context.
+An `AttributionContext` is some kind of lightweight logging context.
 It based on a regular context and holds a message context and standard
 value (key pair) settings for issued log messages, but no rule environment
 for influencing the log output and no base logger. These elements are
@@ -192,7 +192,7 @@ whose activation level is determined from the base logging context and the
 additional message context provided by the attribution context.
 
 Additionally, they provide the possibility to create sub context for
-more specific settings, which will be forworded to the created logger objects. 
+more specific settings, which will be forwarded to the created logger objects. 
 
 ```go
 actx := logging.NewAttributionContext(ctx, logging.NewAttribute("name", "value")).Withvalues("key", "value")

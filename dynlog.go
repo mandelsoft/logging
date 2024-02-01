@@ -33,6 +33,7 @@ type dynamicLogger struct {
 
 var _ Logger = (*dynamicLogger)(nil)
 var _ ContextProvider = (*dynamicLogger)(nil)
+var _ AttributionContextProvider = (*dynamicLogger)(nil)
 
 // DynamicLogger returns an unbound logger, which automatically adapts to rule
 // configuration changes applied to its logging context.
@@ -67,6 +68,10 @@ func (d *dynamicLogger) update() Logger {
 
 func (d *dynamicLogger) LoggingContext() Context {
 	return d.attribution.LoggingContext()
+}
+
+func (d *dynamicLogger) AttributionContext() AttributionContext {
+	return d.attribution
 }
 
 func (d *dynamicLogger) LogError(err error, msg string, keypairs ...interface{}) {
