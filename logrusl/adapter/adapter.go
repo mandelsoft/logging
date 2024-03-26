@@ -65,7 +65,7 @@ func NewTextFormatter() *logrusfmt.TextFormatter {
 func NewTextFmtFormatter(padded ...bool) *logrusfmt.TextFmtFormatter {
 	f := NewTextFormatter()
 	if len(padded) > 0 && padded[0] {
-		f.PaddedFixedFields = len(f.FixedFields) - 1
+		f.PaddedFixedFields = len(f.FixedFields)
 	}
 	return &logrusfmt.TextFmtFormatter{*f}
 }

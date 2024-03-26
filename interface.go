@@ -205,6 +205,22 @@ type MessageContextProvider interface {
 	GetMessageContext() []MessageContext
 }
 
+// LoggerProvider is the interface to gain access to a logger
+// from some logger source. It is implemented by [Context]
+// and [AttributionContext].
+type LoggerProvider interface {
+	// Logger return the effective logger for the given message context.
+	Logger(...MessageContext) Logger
+	// V returns the effective logr.Logger for the given message context with
+	// the given base level.
+	V(level int, mctx ...MessageContext) logr.Logger
+	// LoggerFor provides a logger according to rules for a dedicated message
+	// context. There is no default level and no log context involved,
+	// only the base logr sink is used.
+	// If no rule matches the [NonLoggingLogger] is returned.
+	LoggerFor(messageContext ...MessageContext) Logger
+}
+
 // AttributionContext describes a [Context], a
 // [MessageContext] and a set of preset values.
 // which can be used to gain a [Logger] or
@@ -213,6 +229,7 @@ type AttributionContext interface {
 	ContextProvider
 	AttributionContextProvider
 	MessageContextProvider
+	LoggerProvider
 
 	// WithContext provides a new logging Context enriched by the given standard
 	// message context
@@ -224,11 +241,8 @@ type AttributionContext interface {
 	// creation..
 	WithValues(keypairs ...interface{}) AttributionContext
 
-	// Logger return the effective logger for the given message context.
-	Logger(...MessageContext) Logger
-	// V returns the effective logr.Logger for the given message context with
-	// the given base level.
-	V(level int, mctx ...MessageContext) logr.Logger
+	// Match evaluates a condition against the message context.
+	Match(cond Condition) bool
 }
 
 // Context describes the interface of a logging context.
@@ -239,6 +253,7 @@ type Context interface {
 	ContextProvider
 	AttributionContextProvider
 	MessageContextProvider
+	LoggerProvider
 
 	// GetSink returns the effective logr.LOgSink used as base logger
 	// for this context.
@@ -277,15 +292,13 @@ type Context interface {
 	// WithContext provides a new logging Context enriched by the given standard
 	// message context
 	WithContext(messageContext ...MessageContext) Context
-	// Logger return the effective logger for the given message context.
-	Logger(...MessageContext) Logger
-	// V returns the effective logr.Logger for the given message context with
-	// the given base level.
-	V(level int, mctx ...MessageContext) logr.Logger
 
 	// Evaluate returns the effective logger for the given message context
 	// based on the given logr.LogSink.
 	Evaluate(SinkFunc, ...MessageContext) Logger
+
+	// Match evaluates a condition against the message context.
+	Match(cond Condition) bool
 
 	// Tree provides an interface for the context intended for
 	// context implementations to work together in a context tree.

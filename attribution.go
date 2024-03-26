@@ -75,9 +75,21 @@ func (d *attributionContext) WithContext(messageContext ...MessageContext) Attri
 	return &l
 }
 
+func (d *attributionContext) Match(cond Condition) bool {
+	return cond.Match(append(d.ctx.GetMessageContext(), d.messageContext...))
+}
+
 func (d *attributionContext) Logger(messageContext ...MessageContext) Logger {
 	l := d.ctx.Logger(sliceAppend(d.messageContext, messageContext...))
 
+	if len(d.values) > 0 {
+		l = l.WithValues(d.values...)
+	}
+	return l
+}
+
+func (d *attributionContext) LoggerFor(messageContext ...MessageContext) Logger {
+	l := d.ctx.LoggerFor(messageContext...)
 	if len(d.values) > 0 {
 		l = l.WithValues(d.values...)
 	}

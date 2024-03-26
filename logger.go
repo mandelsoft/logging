@@ -77,6 +77,72 @@ func (l logger) Enabled(level int) bool {
 	return l.sink.Enabled(level)
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+type nologger struct{}
+
+// NonLoggingLogger is [Logger] which never logs anything.
+var NonLoggingLogger Logger = nologger{}
+
+func (n nologger) LogError(err error, msg string, keypairs ...interface{}) {
+}
+
+func (n nologger) Error(msg string, keypairs ...interface{}) {
+}
+
+func (n nologger) Warn(msg string, keypairs ...interface{}) {
+}
+
+func (n nologger) Info(msg string, keypairs ...interface{}) {
+}
+
+func (n nologger) Debug(msg string, keypairs ...interface{}) {
+}
+
+func (n nologger) Trace(msg string, keypairs ...interface{}) {
+}
+
+func (n nologger) WithName(name string) Logger {
+	return n
+}
+
+func (n nologger) WithValues(keypairs ...interface{}) Logger {
+	return n
+}
+
+func (n nologger) Enabled(level int) bool {
+	return false
+}
+
+func (n nologger) V(delta int) logr.Logger {
+	return logr.New(nosink{}).V(delta)
+}
+
+type nosink struct{}
+
+func (n nosink) Init(info logr.RuntimeInfo) {
+}
+
+func (n nosink) Enabled(level int) bool {
+	return false
+}
+
+func (n nosink) Info(level int, msg string, keysAndValues ...interface{}) {
+}
+
+func (n nosink) Error(err error, msg string, keysAndValues ...interface{}) {
+}
+
+func (n nosink) WithValues(keysAndValues ...interface{}) logr.LogSink {
+	return n
+}
+
+func (n nosink) WithName(name string) logr.LogSink {
+	return n
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 type keyValue struct {
 	name  string
 	value interface{}

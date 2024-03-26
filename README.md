@@ -390,6 +390,21 @@ They can be used, for example for permanent worker Go routines, to
 statically define the log name or standard values used for all subsequent log
 requests according to the identity of the worker.
 
+## Condition specific Loggers
+
+Loggers are always enabled according to their effective message context
+by evaluating the rules configured for the message context.
+If a message context includes a tag, those loggers are enabled
+if there is a rule matching this tag. But they are enabled, also, if
+there are rules matching other elements in the effective message context
+of the context used to retrieve the logger.
+
+Using the `LoggerFor` methods a logger can be retrieved for a dedicated
+message context without using the inherited settings from the context.
+This way, the retrieved logger is enabled by rules for the
+given message context, only.
+
+
 ## Support for special logging systems
 
 The general *logr* logging framework acts as a wrapper for

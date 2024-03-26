@@ -232,6 +232,27 @@ func (c *context) WithContext(messageContext ...MessageContext) Context {
 	return ctx
 }
 
+func (c *context) Match(cond Condition) bool {
+	return cond.Match(c.messageContext...)
+}
+
+func (c *context) LoggerFor(messageContext ...MessageContext) Logger {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	messageContext = explode(messageContext)
+	l := c.evaluate(c.GetSink, messageContext...)
+	if l == nil {
+		return NonLoggingLogger
+	}
+	for _, c := range messageContext {
+		if a, ok := c.(Attacher); ok {
+			l = a.Attach(l)
+		}
+	}
+	return l
+}
+
 func (c *context) Logger(messageContext ...MessageContext) Logger {
 	c.lock.RLock()
 	defer c.lock.RUnlock()

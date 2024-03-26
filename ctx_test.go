@@ -696,6 +696,46 @@ ERROR <nil> error
 		})
 	})
 
+	Context("tag based logging", func() {
+		var tag = logging.NewTag("info")
+
+		It("logs nothing if tag not present", func() {
+			ctx.AddRule(logging.NewConditionRule(logging.TraceLevel, tag))
+
+			ctx.Logger().Info("test", "some", "value")
+			ctx.Logger().Debug("should not be logged")
+			Expect(buf.String()).To(Equal("V[3] test some value\n"))
+		})
+
+		It("logs if tag is present", func() {
+			ctx.AddRule(logging.NewConditionRule(logging.TraceLevel, tag))
+
+			ctx.Logger(tag).Debug("test", "some", "value")
+			Expect(buf.String()).To(Equal("V[4] test some value\n"))
+		})
+
+		It("logs if tag is present for complex context", func() {
+			ctx.AddRule(logging.NewConditionRule(logging.TraceLevel, tag))
+
+			ctx.Logger([]logging.MessageContext{tag}).Debug("test", "some", "value")
+			Expect(buf.String()).To(Equal("V[4] test some value\n"))
+		})
+
+		It("logs for tag", func() {
+			ctx.AddRule(logging.NewConditionRule(logging.TraceLevel, tag))
+
+			log := ctx.LoggerFor(tag)
+			log.Debug("test", "some", "value")
+			Expect(buf.String()).To(Equal("V[4] test some value\n"))
+		})
+
+		It("does not log at all if tag is not given", func() {
+			ctx.Logger(tag).Info("test", "some", "value")
+			ctx.LoggerFor(tag).Info("should not be logged")
+			Expect(buf.String()).To(Equal("V[3] test some value\n"))
+		})
+
+	})
 })
 
 type Value struct {

@@ -93,8 +93,8 @@ var _ = Describe("text formatter test", func() {
 			Expect("\n" + buf.String()).To(MatchRegexp(`
 .{25} info    ages alice=25 bob=26
 .{25} info    \[realm\] message alice=25 bob=26
-.{25} info            other alice=25 bob=26
-.{25} info    test         name alice=25 bob=26
+.{25} info            other   alice=25 bob=26
+.{25} info    test         name    alice=25 bob=26
 .{25} info         \[realm\] message alice=25 bob=26
 .{25} info    bla  \[realm\] message alice=25 bob=26
 .{25} info    bla  \[test\]  message alice=25 bob=26
