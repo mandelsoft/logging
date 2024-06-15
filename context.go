@@ -19,11 +19,13 @@
 package logging
 
 import (
+	"io"
 	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/mandelsoft/logging/logrusl/adapter"
 	"github.com/mandelsoft/logging/logrusr"
+	"github.com/mandelsoft/logging/logwriter"
 )
 
 type context struct {
@@ -31,8 +33,11 @@ type context struct {
 	lock    sync.RWMutex
 	base    Context
 	updater *Updater
+	level   int
 
-	level int
+	// optional information for final log sink stream
+	writer io.Writer
+
 	sink  logr.LogSink
 	rules []Rule
 
@@ -50,19 +55,24 @@ func NewDefault() Context {
 	return NewWithBase(nil)
 }
 
-func New(logger logr.Logger) Context {
+func New(logger logr.Logger, writer ...io.Writer) Context {
 	return NewWithBase(nil, logger)
 }
 
 func NewWithBase(base Context, baselogger ...logr.Logger) Context {
-	return newWithBase(base, baselogger...)
+	return newWithBase(base, nil, baselogger...)
 }
 
-func newWithBase(base Context, baselogger ...logr.Logger) *context {
+func NewWithBaseAndTechnicalSink(base Context, writer io.Writer, baselogger ...logr.Logger) Context {
+	return newWithBase(base, writer, baselogger...)
+}
+
+func newWithBase(base Context, writer io.Writer, baselogger ...logr.Logger) *context {
 	ctx := &context{
-		base:  base,
-		level: -1,
-		id:    getId(),
+		base:   base,
+		level:  -1,
+		id:     getId(),
+		writer: writer,
 	}
 
 	if base == nil {
@@ -75,12 +85,19 @@ func newWithBase(base Context, baselogger ...logr.Logger) *context {
 	}
 
 	if len(baselogger) > 0 {
-		ctx.setBaseLogger(baselogger[0])
+		ctx.setBaseLogger(baselogger[0], writer)
 	}
 	if base == nil && len(baselogger) == 0 {
 		l := adapter.NewLogger()
 		l.Formatter = adapter.NewTextFmtFormatter()
-		ctx.setBaseLogger(logrusr.New(l))
+		ctx.setBaseLogger(logrusr.New(l), writer)
+		ctx.writer = l.Out
+	}
+	if ctx.writer == nil && ctx.sink == nil {
+		ctx.writer, _ = logrusr.LogWriter(ctx.GetSink())
+		if ctx.writer == nil && ctx.base != nil {
+			ctx.writer = ctx.base.Tree().LogWriter()
+		}
 	}
 	ctx.defaultLogger = NewLogger(DynSink(ctx.GetDefaultLevel, 0, ctx.GetSink))
 	ctx._update()
@@ -89,6 +106,10 @@ func newWithBase(base Context, baselogger ...logr.Logger) *context {
 
 func (c *context) Tree() ContextSupport {
 	return c
+}
+
+func (c *context) LogWriter() io.Writer {
+	return c.writer
 }
 
 func (c *context) GetMessageContext() []MessageContext {
@@ -168,19 +189,27 @@ func (c *context) setDefaultLevel(level int) {
 }
 
 func (c *context) SetBaseLogger(logger logr.Logger, plain ...bool) {
+	c.SetBaseLoggerWithTechnicalSink(logger, nil, plain...)
+}
+
+func (c *context) SetBaseLoggerWithTechnicalSink(logger logr.Logger, writer io.Writer, plain ...bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	c.setBaseLogger(logger, plain...)
+	c.setBaseLogger(logger, writer, plain...)
 	c.updater.Modify()
 	c._update()
 }
 
-func (c *context) setBaseLogger(logger logr.Logger, plain ...bool) {
+func (c *context) setBaseLogger(logger logr.Logger, writer io.Writer, plain ...bool) {
 	if len(plain) == 0 || !plain[0] {
 		c.sink = shifted(logger)
 	} else {
 		c.sink = logger.GetSink()
+	}
+	c.writer = writer
+	if c.writer == nil {
+		c.writer = logwriter.DetermineLogWriter(c.sink)
 	}
 }
 
@@ -227,7 +256,7 @@ func (c *context) ResetRules() {
 }
 
 func (c *context) WithContext(messageContext ...MessageContext) Context {
-	ctx := newWithBase(c)
+	ctx := newWithBase(c, nil)
 	ctx.messageContext = JoinMessageContext(ctx.messageContext, explode(messageContext)...)
 	return ctx
 }

@@ -18,6 +18,10 @@
 
 package logging
 
+import (
+	"io"
+)
+
 // ContextSupport is intended for Context implementations for working
 // together in a context tree consiting of potentially different implementations.
 // It is not intended for the consumer of a logging context.
@@ -31,4 +35,10 @@ type ContextSupport interface {
 	// GetMessageContext returns the configured standard message context
 	// shared for all created Loggers.
 	GetMessageContext() []MessageContext
+
+	// LogWriter returns an optional writer finally used to write
+	// log entries.
+	// This writer must explicitly be provided appropriately for the given
+	// logr logger, when creating the logging context-
+	LogWriter() io.Writer
 }

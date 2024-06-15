@@ -8,6 +8,7 @@ package logrusr
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -80,7 +81,6 @@ func New(l logrus.FieldLogger, opts ...Option) logr.Logger {
 	for _, o := range opts {
 		o(logger)
 	}
-
 	return logr.New(logger)
 }
 
@@ -159,6 +159,12 @@ func (l *logrusr) WithName(name string) logr.LogSink {
 	return newLogger
 }
 
+// LogWriter in the implementation of the logging.LogWriter interface
+// use to provide access to the technical log sink.
+func (l *logrusr) LogWriter() io.Writer {
+	return l.logger.Logger.Out
+}
+
 type stringer interface {
 	String() string
 }
@@ -224,4 +230,24 @@ func (l *logrusr) caller() string {
 	}
 
 	return fmt.Sprintf("%s:%d", filepath.Base(file), line)
+}
+
+// LogWriter return the original log writer used
+// for a logr.LogSink wrapping logrus.
+func LogWriter(sink logr.LogSink) (io.Writer, bool) {
+	if l, ok := sink.(*logrusr); ok {
+		return l.logger.Logger.Out, true
+
+	}
+	return nil, false
+}
+
+// SetFormatter sets the logrus formatter for a sink wrapping
+// a logrus.Logger.
+func SetFormatter(sink logr.LogSink, f logrus.Formatter) bool {
+	if l, ok := sink.(*logrusr); ok {
+		l.logger.Logger.Formatter = f
+		return true
+	}
+	return false
 }

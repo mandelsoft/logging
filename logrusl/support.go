@@ -22,13 +22,14 @@ import (
 	"io"
 	"os"
 
+	"github.com/go-logr/logr"
 	"github.com/mandelsoft/logging"
 	"github.com/mandelsoft/logging/logrusl/adapter"
 	"github.com/mandelsoft/logging/logrusr"
 	"github.com/sirupsen/logrus"
 )
 
-// Settings is an composition environment to configure a
+// Settings is a composition environment to configure a
 // logrus.Logger or a logging.Context.
 type Settings struct {
 	Writer    io.Writer
@@ -55,6 +56,10 @@ func (s Settings) JSON() Settings {
 	return s
 }
 
+func (s Settings) NewLogr() logr.Logger {
+	return logrusr.New(s.NewLogrus())
+}
+
 func (s Settings) NewLogrus() *logrus.Logger {
 	logger := adapter.NewLogger()
 	logger.Out = s.Writer
@@ -76,6 +81,10 @@ func (s Settings) New() logging.Context {
 
 func New() logging.Context {
 	return Settings{}.New()
+}
+
+func Adapter() Settings {
+	return Settings{}
 }
 
 func WithWriter(w io.Writer) Settings {

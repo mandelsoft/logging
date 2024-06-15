@@ -16,6 +16,14 @@
  *  limitations under the License.
  */
 
-// Package logrusl is an adpater to use the [github.com/mandelsoft/logging] library
+// Package logrusl is an adapter to use the [github.com/mandelsoft/logging] library
 // on top of [github.com/sirupsen/logrus].
+//
+// Examples:
+//
+//	logrusl.Adapter().New()
+//	logrusl.WithWriter(....).New()
+//	logrusl.Human().New()
+//	logrusl.JSOM().NewLogr()
+//	logrusl.Adapter().WithFormatter(...).NewLogrus()
 package logrusl

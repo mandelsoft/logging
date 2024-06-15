@@ -21,6 +21,7 @@ package logging_test
 import (
 	"bytes"
 	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -733,6 +734,23 @@ ERROR <nil> error
 			ctx.Logger(tag).Info("test", "some", "value")
 			ctx.LoggerFor(tag).Info("should not be logged")
 			Expect(buf.String()).To(Equal("V[3] test some value\n"))
+		})
+	})
+
+	Context("log writer support", func() {
+		It("provides default writer for logrus", func() {
+			Expect(logrusl.New().Tree().LogWriter()).To(BeIdenticalTo(os.Stderr))
+		})
+
+		It("provides default writer for logrus in base context", func() {
+			Expect(logrusl.New().WithContext().Tree().LogWriter()).To(BeIdenticalTo(os.Stderr))
+		})
+
+		It("provides explicit writer for logrus in base context", func() {
+			ctx := logrusl.New().WithContext()
+			buf := bytes.NewBuffer(nil)
+			ctx.SetBaseLogger(logrusr.New(adapter.NewLogger(buf)))
+			Expect(ctx.Tree().LogWriter()).To(BeIdenticalTo(buf))
 		})
 
 	})

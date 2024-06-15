@@ -38,6 +38,10 @@ func WrapSink(level, delta int, orig logr.LogSink) logr.LogSink {
 	}
 }
 
+func (s *sink) Unwrap() logr.LogSink {
+	return s.sink
+}
+
 func (s *sink) Init(info logr.RuntimeInfo) {
 	s.sink.Init(info)
 }
@@ -126,7 +130,7 @@ func (s *dynsink) Info(level int, msg string, keysAndValues ...interface{}) {
 	s.sink().Info(level+s.delta, msg, keysAndValues...)
 }
 
-func (s dynsink) Error(err error, msg string, keysAndValues ...interface{}) {
+func (s *dynsink) Error(err error, msg string, keysAndValues ...interface{}) {
 	s.sink().Error(err, msg, keysAndValues...)
 }
 
@@ -138,10 +142,30 @@ func (s *dynsink) WithValues(keysAndValues ...interface{}) logr.LogSink {
 	}
 }
 
-func (s dynsink) WithName(name string) logr.LogSink {
+func (s *dynsink) WithName(name string) logr.LogSink {
 	return &dynsink{
 		level: s.level,
 		delta: s.delta,
 		sink:  func() logr.LogSink { return s.sink().WithName(name) },
+	}
+}
+
+func (s *dynsink) Unwrap() logr.LogSink {
+	return s.sink()
+}
+
+// UnwrapLogSink return the original (unmapped)
+// logr.LogSink.
+func UnwrapLogSink(s logr.LogSink) logr.LogSink {
+	for {
+		u, ok := s.(interface{ Unwrap() logr.LogSink })
+		if ok {
+			m := u.Unwrap()
+			if m != s && m != nil {
+				s = m
+				continue
+			}
+		}
+		return s
 	}
 }
