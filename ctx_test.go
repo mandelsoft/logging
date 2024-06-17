@@ -739,11 +739,11 @@ ERROR <nil> error
 
 	Context("log writer support", func() {
 		It("provides default writer for logrus", func() {
-			Expect(logrusl.New().Tree().LogWriter()).To(BeIdenticalTo(os.Stderr))
+			Expect(utils.UnwrapWriter(logrusl.New().Tree().LogWriter())).To(BeIdenticalTo(os.Stderr))
 		})
 
 		It("provides default writer for logrus in base context", func() {
-			Expect(logrusl.New().WithContext().Tree().LogWriter()).To(BeIdenticalTo(os.Stderr))
+			Expect(utils.UnwrapWriter(logrusl.New().WithContext().Tree().LogWriter())).To(BeIdenticalTo(os.Stderr))
 		})
 
 		It("provides explicit writer for logrus in base context", func() {

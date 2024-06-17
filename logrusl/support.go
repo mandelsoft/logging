@@ -26,6 +26,7 @@ import (
 	"github.com/mandelsoft/logging"
 	"github.com/mandelsoft/logging/logrusl/adapter"
 	"github.com/mandelsoft/logging/logrusr"
+	"github.com/mandelsoft/logging/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -64,7 +65,7 @@ func (s Settings) NewLogrus() *logrus.Logger {
 	logger := adapter.NewLogger()
 	logger.Out = s.Writer
 	if logger.Out == nil {
-		logger.Out = os.Stderr
+		logger.Out = utils.NewSyncWriter(os.Stderr)
 	}
 	logger.Formatter = s.Formatter
 	if logger.Formatter == nil {
